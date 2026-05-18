@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Pipeline — Fundación Industrial Navarra</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:"Calibri","Segoe UI","Helvetica Neue",Arial,sans-serif;background:#EEF5F7;color:#040D17;font-size:clamp(13px,1vw,16px);}
+:root{--fp:#0C5580;--fm:#25618B;--fl:#B0D1D7;--fb:#EEF5F7;--fd:#040D17;--fr:#BC262E;--fn:#1F4E79;--fmu:#757575;}
+#wrap{display:flex;flex-direction:column;min-height:100vh;}
+.hdr{background:var(--fp);padding:10px clamp(12px,2vw,32px);display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--fr);flex-wrap:wrap;gap:8px;}
+.hdr-left{display:flex;align-items:center;gap:14px;}
+.hdr-logo{height:38px;}
+.hdr-title{color:#fff;font-weight:700;font-size:17px;line-height:1.2;}
+.hdr-sub{color:#B0D1D7;font-size:11px;margin-top:2px;}
+.hdr-right{display:flex;gap:8px;}
+.nav{background:var(--fp);padding:5px clamp(12px,2vw,32px);display:flex;gap:6px;border-bottom:1px solid var(--fm);flex-wrap:wrap;}
+.kpibar{background:var(--fp);padding:6px clamp(12px,2vw,32px);display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--fm);}
+.kpi{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px clamp(10px,1.2vw,18px);text-align:center;}
+.kpi-v{color:#fff;font-size:clamp(14px,1.2vw,20px);font-weight:700;line-height:1;}
+.kpi-v.red{color:#F5A0A0;}
+.kpi-l{color:#B0D1D7;font-size:9px;text-transform:uppercase;letter-spacing:.05em;margin-top:2px;}
+.main{flex:1;padding:clamp(12px,1.5vw,24px) clamp(12px,2vw,32px);overflow-y:auto;}
+.btn{border:none;border-radius:5px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;transition:opacity .15s;}
+.btn:hover{opacity:.85;}
+.btn-primary{background:var(--fp);color:#fff;}
+.btn-danger{background:var(--fr);color:#fff;}
+.btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.25);}
+.btn-ghost.active{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.5);}
+.btn-outline{background:var(--fb);color:var(--fp);border:1px solid var(--fl);}
+.btn-lostout{background:#FFF0F0;color:var(--fr);border:1px solid #F5C0C0;}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.kanban{display:flex;gap:clamp(6px,0.8vw,14px);align-items:flex-start;width:100%;}
+.kcol{flex:1;min-width:0;}
+.kcol.lost-col{flex:0 0 clamp(160px,14vw,240px);}
+.col-hdr{background:var(--fp);color:#fff;font-size:clamp(8px,0.7vw,11px);font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:6px clamp(6px,0.6vw,10px);border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:center;}
+.col-hdr.lost{background:#C0392B;}
+.col-badge{background:rgba(255,255,255,.22);border-radius:8px;padding:1px 7px;font-size:10px;font-weight:700;}
+.col-body{border:1px solid var(--fl);border-top:none;border-radius:0 0 6px 6px;padding:clamp(4px,0.5vw,8px) clamp(4px,0.4vw,6px);min-height:clamp(120px,20vh,300px);display:flex;flex-direction:column;gap:5px;background:rgba(12,85,128,.03);transition:background .15s,border .15s;}
+.col-body.over{background:rgba(12,85,128,.12);border:2px dashed var(--fp);padding:6px 4px;}
+.col-body.over-lost{background:rgba(192,57,43,.1);border:2px dashed #C0392B;padding:6px 4px;}
+.card{background:#fff;border:1px solid var(--fl);border-left:3px solid var(--fp);border-radius:6px;padding:clamp(6px,0.6vw,10px) clamp(7px,0.7vw,12px);cursor:grab;user-select:none;transition:box-shadow .15s;}
+.card:hover{box-shadow:0 2px 10px rgba(12,85,128,.14);}
+.card.dragging{opacity:.3;cursor:grabbing;}
+.card.warn{border-left-color:#E67E22;}
+.card.lostcard{background:#FFF8F8;border-left-color:#C0392B;cursor:pointer;}
+.card-co{font-size:clamp(11px,0.85vw,14px);font-weight:700;color:var(--fn);margin-bottom:2px;}
+.card-sec{font-size:clamp(9px,0.7vw,11px);color:var(--fmu);margin-bottom:4px;}
+.card-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.card-com{font-size:10px;color:var(--fp);}
+.card-pip{font-size:9px;background:var(--fb);color:var(--fp);padding:1px 5px;border-radius:5px;font-weight:700;}
+.card-bot{display:flex;justify-content:space-between;align-items:center;}
+.card-days{font-size:10px;color:var(--fmu);}
+.card-days.al{color:#C0392B;font-weight:700;}
+.card-prob{font-size:11px;font-weight:700;color:var(--fm);}
+.card-prob.cust{color:var(--fr);}
+.card-imp{font-size:11px;color:var(--fp);font-weight:700;margin-top:4px;padding-top:4px;border-top:1px solid var(--fl);}
+.card-lreason{font-size:10px;color:#922B21;font-style:italic;margin-bottom:4px;}
+.add-btn{background:transparent;border:1px dashed var(--fl);border-radius:5px;color:var(--fmu);font-size:20px;cursor:pointer;padding:5px;width:100%;margin-top:2px;font-family:inherit;}
+.add-btn:hover{background:rgba(12,85,128,.05);}
+.recover-btn{font-size:10px;color:var(--fm);background:var(--fb);border:1px solid var(--fl);border-radius:4px;padding:3px 8px;cursor:pointer;width:100%;margin-top:4px;font-family:inherit;}
+.overlay{position:fixed;inset:0;background:rgba(4,13,23,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:580px;max-height:92vh;overflow-y:auto;border-top:4px solid var(--fr);}
+.modal.btop{border-top-color:var(--fp);}
+.mhdr{background:var(--fp);padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-start;border-radius:6px 6px 0 0;}
+.mhdr-co{color:#fff;font-size:16px;font-weight:700;}
+.mhdr-sub{color:#B0D1D7;font-size:12px;margin-top:2px;}
+.mbadge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-top:6px;margin-right:4px;}
+.mclose{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:4px;padding:2px 9px;cursor:pointer;font-size:17px;line-height:1.2;font-family:inherit;}
+.mbody{padding:18px 20px;}
+.stitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fp);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--fl);margin-top:0;}
+.mt16{margin-top:16px;}
+.stagebar{display:flex;gap:3px;margin:7px 0 5px;}
+.sdot{height:6px;flex:1;border-radius:3px;background:var(--fl);}
+.sdot.done{background:var(--fp);}
+.sdot.cur{background:var(--fr);}
+.slabel{font-size:12px;color:var(--fp);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.snum{background:var(--fp);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:4px;}
+.fgrp{display:flex;flex-direction:column;gap:3px;}
+.flbl{font-size:10px;color:var(--fmu);text-transform:uppercase;letter-spacing:.04em;}
+.fval{font-size:13px;color:var(--fd);font-weight:600;}
+.fval.al{color:#C0392B;}
+.inp{width:100%;font-size:12px;padding:5px 8px;border:1px solid var(--fl);border-radius:4px;color:var(--fd);background:#fff;outline:none;font-family:inherit;}
+.inp:focus{border-color:var(--fp);}
+.inp.cust{border-color:var(--fr);color:var(--fr);font-weight:700;}
+.prob-row{display:flex;gap:6px;align-items:center;}
+.prob-inp{width:70px!important;}
+.prob-reset{font-size:10px;color:var(--fm);background:var(--fb);border:1px solid var(--fl);border-radius:4px;padding:3px 8px;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.obs-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;margin-bottom:8px;}
+.obs-e{border-left:3px solid var(--fp);border-radius:0 5px 5px 0;padding:7px 10px;background:var(--fb);}
+.obs-e.sys{border-left-color:var(--fl);background:#f9f9f9;}
+.obs-e.al{border-left-color:var(--fr);background:#FFF5F5;}
+.obs-meta{font-size:10px;color:var(--fmu);margin-bottom:2px;display:flex;gap:6px;align-items:center;}
+.obs-auth{font-weight:700;color:var(--fp);}
+.obs-badge{font-size:8px;padding:1px 4px;border-radius:3px;}
+.obs-badge.s{background:var(--fb);color:var(--fp);}
+.obs-badge.a{background:#FFF0F0;color:var(--fr);}
+.obs-txt{font-size:12px;color:var(--fd);line-height:1.5;}
+.obs-ta{width:100%;border:1px solid var(--fl);border-radius:5px;padding:8px 10px;font-size:12px;font-family:inherit;color:var(--fd);resize:vertical;min-height:60px;outline:none;}
+.obs-ta:focus{border-color:var(--fp);}
+.mactions{display:flex;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--fl);align-items:center;flex-wrap:wrap;}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(clamp(100px,12vw,180px),1fr));gap:clamp(8px,0.8vw,14px);margin-bottom:clamp(12px,1.2vw,20px);}
+.dash-kpi{background:#fff;border:1px solid var(--fl);border-radius:8px;padding:14px;text-align:center;}
+.dash-kpi-v{font-size:22px;font-weight:700;color:var(--fp);line-height:1;}
+.dash-kpi-v.red{color:#C0392B;}
+.dash-kpi-l{font-size:10px;color:var(--fmu);text-transform:uppercase;letter-spacing:.05em;margin-top:5px;}
+.dash-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:12px;margin-bottom:12px;}
+.dash-card{background:#fff;border:1px solid var(--fl);border-radius:8px;padding:14px 16px;}
+.dash-ct{font-size:13px;font-weight:700;color:var(--fn);margin-bottom:12px;}
+.brow{margin-bottom:10px;}
+.blbl{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
+.btrack{background:var(--fb);border-radius:4px;height:10px;overflow:hidden;position:relative;}
+.bbg{position:absolute;height:100%;width:100%;background:var(--fl);border-radius:4px;}
+.bfill{position:absolute;height:100%;background:var(--fp);border-radius:4px;}
+.bsub{font-size:9px;color:var(--fmu);margin-top:2px;}
+.crow{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.cav{width:32px;height:32px;border-radius:50%;background:var(--fb);border:1px solid var(--fl);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--fp);flex-shrink:0;}
+.cname{font-size:12px;font-weight:700;color:var(--fd);}
+.csub{font-size:10px;color:var(--fmu);}
+.cimp{font-size:12px;font-weight:700;color:var(--fp);text-align:right;}
+.cpond{font-size:10px;color:var(--fmu);text-align:right;}
+.lost-reasons{display:flex;flex-wrap:wrap;gap:7px;}
+.lrc{background:#fff;border:1px solid #F5C0C0;border-radius:5px;padding:5px 12px;font-size:11px;}
+.lrn{font-weight:700;color:var(--fr);}
+.eq-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.eq-val{flex:1;font-size:12px;padding:5px 8px;background:var(--fb);border-radius:4px;color:var(--fd);}
+.eq-inp{flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--fp);border-radius:4px;outline:none;font-family:inherit;color:var(--fd);}
+
+.config-section{background:#fff;border:1px solid var(--fl);border-radius:8px;padding:16px 20px;margin-bottom:14px;}
+.config-section-title{font-size:13px;font-weight:700;color:var(--fn);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--fl);}
+.config-table{width:100%;border-collapse:collapse;font-size:12px;}
+.config-table th{background:var(--fp);color:#fff;padding:7px 10px;text-align:left;font-weight:600;}
+.config-table td{padding:6px 10px;border-bottom:1px solid var(--fl);vertical-align:middle;}
+.config-table tr:nth-child(even) td{background:#F7FBFC;}
+.config-table tr:hover td{background:#EEF5F7;}
+.days-inp{width:60px;font-size:12px;padding:3px 6px;border:1px solid var(--fl);border-radius:4px;text-align:center;font-family:inherit;color:var(--fd);}
+.days-inp:focus{border-color:var(--fp);outline:none;}
+.auto-rule{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--fl);}
+.auto-rule:last-child{border-bottom:none;}
+.auto-rule-icon{font-size:18px;flex-shrink:0;margin-top:2px;}
+.auto-rule-title{font-size:12px;font-weight:700;color:var(--fn);margin-bottom:3px;}
+.auto-rule-desc{font-size:11px;color:var(--fmu);line-height:1.5;}
+.auto-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-right:4px;}
+.auto-badge.p1{background:#EEF5F7;color:var(--fp);}
+.auto-badge.p2{background:#EAF2FF;color:#2E75B6;}
+.auto-badge.p3{background:#E8F5E9;color:#1D9E75;}
+.auto-badge.p4{background:#FFF0F0;color:var(--fr);}
+
+.notif-active{position:relative;}
+.notif-badge{position:absolute;top:-4px;right:-4px;background:var(--fr);color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1;}
+.notif-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.notif-header-title{font-size:16px;font-weight:700;color:var(--fn);}
+.notif-header-actions{display:flex;gap:8px;}
+.notif-item{background:#fff;border:1px solid var(--fl);border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--fp);display:flex;gap:12px;align-items:flex-start;transition:opacity .2s;}
+.notif-item.unread{background:#FAFCFF;}
+.notif-item.read{opacity:.7;}
+.notif-item.overdue{border-left-color:var(--fr);}
+.notif-item.automation{border-left-color:#2E75B6;}
+.notif-item.alert{border-left-color:#E67E22;}
+.notif-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.notif-content{flex:1;}
+.notif-title{font-size:12px;font-weight:700;color:var(--fd);margin-bottom:3px;display:flex;align-items:center;gap:6px;}
+.notif-unread-dot{width:7px;height:7px;border-radius:50%;background:var(--fr);flex-shrink:0;}
+.notif-body{font-size:11px;color:var(--fmu);line-height:1.5;margin-bottom:4px;}
+.notif-meta{font-size:10px;color:var(--fl);display:flex;gap:8px;align-items:center;}
+.notif-pip-badge{font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--fb);color:var(--fp);}
+.notif-clear-btn{background:none;border:none;color:var(--fmu);cursor:pointer;font-size:14px;padding:0 4px;flex-shrink:0;line-height:1;}
+.notif-clear-btn:hover{color:var(--fr);}
+.notif-empty{text-align:center;padding:48px 20px;color:var(--fmu);}
+.notif-empty-icon{font-size:40px;margin-bottom:12px;}
+.notif-empty-text{font-size:13px;}
+
+.help-wrap{max-width:900px;margin:0 auto;}
+.help-hero{background:var(--fp);border-radius:10px;padding:28px 32px;margin-bottom:20px;display:flex;align-items:center;gap:24px;}
+.help-hero-icon{font-size:48px;flex-shrink:0;}
+.help-hero-title{color:#fff;font-size:22px;font-weight:700;margin-bottom:4px;}
+.help-hero-sub{color:var(--fl);font-size:13px;line-height:1.6;}
+.help-section{background:#fff;border:1px solid var(--fl);border-radius:8px;padding:20px 24px;margin-bottom:14px;}
+.help-section-title{font-size:15px;font-weight:700;color:var(--fn);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--fl);display:flex;align-items:center;gap:8px;}
+.help-section-icon{font-size:18px;}
+.help-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px;}
+.help-card{background:var(--fb);border:1px solid var(--fl);border-radius:7px;padding:14px 16px;}
+.help-card-title{font-size:12px;font-weight:700;color:var(--fp);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.help-card-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;}
+.help-card-badge.p1{background:var(--fp);}
+.help-card-badge.p2{background:#2E75B6;}
+.help-card-badge.p3{background:#1D9E75;}
+.help-card-badge.p4{background:var(--fr);}
+.help-card-text{font-size:11px;color:var(--fmu);line-height:1.6;}
+.help-steps{display:flex;flex-direction:column;gap:8px;}
+.help-step{display:flex;align-items:flex-start;gap:12px;}
+.help-step-num{background:var(--fp);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.help-step-content{flex:1;}
+.help-step-title{font-size:12px;font-weight:700;color:var(--fd);margin-bottom:2px;}
+.help-step-text{font-size:11px;color:var(--fmu);line-height:1.5;}
+.help-auto-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--fl);}
+.help-auto-row:last-child{border-bottom:none;padding-bottom:0;}
+.help-auto-arrow{display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:110px;}
+.help-auto-from{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;}
+.help-auto-to{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;}
+.help-auto-sep{font-size:14px;color:var(--fmu);}
+.help-auto-content{}
+.help-auto-title{font-size:12px;font-weight:700;color:var(--fd);margin-bottom:2px;}
+.help-auto-text{font-size:11px;color:var(--fmu);line-height:1.5;}
+.help-auto-trigger{display:inline-block;font-size:9px;background:#EEF5F7;color:var(--fp);border:1px solid var(--fl);border-radius:4px;padding:1px 6px;margin-top:4px;font-weight:600;}
+.help-tip{background:#FFFBEA;border:1px solid #F0D060;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:11px;color:#7A5C00;display:flex;gap:8px;align-items:flex-start;}
+.help-tip-icon{font-size:14px;flex-shrink:0;}
+.help-kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.help-kpi-chip{background:var(--fb);border:1px solid var(--fl);border-radius:6px;padding:8px 14px;flex:1;min-width:120px;}
+.help-kpi-label{font-size:10px;color:var(--fmu);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+.help-kpi-desc{font-size:11px;color:var(--fd);line-height:1.4;}
+.help-shortcut-table{width:100%;border-collapse:collapse;font-size:11px;}
+.help-shortcut-table td{padding:6px 10px;border-bottom:1px solid var(--fl);}
+.help-shortcut-table tr:last-child td{border-bottom:none;}
+.help-shortcut-table td:first-child{font-weight:700;color:var(--fp);width:40%;}
+.help-shortcut-table tr:nth-child(even) td{background:var(--fb);}
+
+@media(min-width:1600px){
+  .card-co{font-size:14px;}
+  .card-sec{font-size:11px;}
+  .col-hdr{font-size:11px;}
+  .kpi-v{font-size:20px;}
+}
+@media(max-width:1100px){
+  .kanban{overflow-x:auto;padding-bottom:8px;}
+  .kcol{min-width:140px;flex:0 0 clamp(140px,18vw,200px);}
+  .kcol.lost-col{flex:0 0 clamp(150px,18vw,200px);}
+}
+@media(max-width:768px){
+  .hdr-right{width:100%;justify-content:flex-start;}
+  .hdr{padding:8px 12px;}
+  .nav,.kpibar{padding:4px 10px;}
+  .main{padding:10px 10px;}
+  .modal{max-width:98vw;}
+  .fgrid{grid-template-columns:1fr;}
+}
+.footer{background:var(--fp);color:#B0D1D7;font-size:10px;padding:7px clamp(12px,2vw,32px);display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header class="hdr">
+    <div class="hdr-left">
+      <img class="hdr-logo" id="fin-logo" alt="Fundacion Industrial Navarra">
+      <div>
+        <div class="hdr-title">CRM Pipeline &mdash; Fundaci&oacute;n Industrial Navarra</div>
+        <div class="hdr-sub">Director Comercial y Marketing &middot; 2026</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <button class="btn btn-ghost active" id="btn-kanban" onclick="setView('kanban')">Kanban</button>
+      <button class="btn btn-ghost" id="btn-dashboard" onclick="setView('dashboard')">Dashboard</button>
+      <button class="btn btn-ghost" onclick="openEquipo()">&#128101; Equipo</button>
+      <button class="btn btn-ghost" id="btn-config" onclick="setView('config')">&#9881; Config</button>
+      <button class="btn btn-ghost" id="btn-notif" onclick="setView('notif')" style="position:relative">&#128276; Avisos<span class="notif-badge" id="notif-badge" style="display:none">0</span></button>
+      <button class="btn btn-ghost" id="btn-help" onclick="setView('help')">&#10067; Ayuda</button>
+      <button class="btn btn-danger" onclick="openExportModal()">&#8595; Exportar PDF</button>
+    </div>
+  </header>
+  <div class="nav" id="nav-pipelines"></div>
+  <div class="kpibar" id="kpibar"></div>
+  <div class="main" id="main-content"></div>
+  <footer class="footer">
+    <span>fundacionindustrialnavarra.com</span>
+    <span>&copy; 2026 Fundaci&oacute;n Industrial Navarra</span>
+  </footer>
+</div>
+<div class="overlay" id="overlay" style="display:none" onclick="overlayClickHandler(event)">
+  <div class="modal" id="modal-box"></div>
+</div>
+<script>
+
+document.getElementById("fin-logo").src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAABACAYAAABfuzgrAAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAqtklEQVR42u19e3wU5bn/8+7mArkghCheEEFEEbxCrYgWxHptPVZsoz3VlrYc8Ry1tt7bnl8N9LRWGqmiHJUCIiBaA1FAGrkIAUJiLpuQ+2Uv2ewte5ud2dmd2evMPL8/eIcOawIJWVA8eT+f/WQzOzPvO+/73J/v8w6Bb0YjiEgIIQoA6Ds6Ou7Oz89fmJubO2vUqFEXCIIwYfTo0aFkMskqitLu9/sPNDQ0bH3kkUdsAACIqKPXjrSR9s1qiEgQkQAAdHV1PRQKheoVRcGTNVEUGbvd/re33nprHABAaWmpfmQ2R9o3kjnmz5+f4Xa7N2joX0FECRFlRFQowyj0I9PfEBGR53nTwYMHZ40wyUj7pjWCiHoA0LMs+zGl96QsyzIOrimImEBEjEQiTEVFxVWquTUytSPtm6A99AAAVqt1OSX4OJ5Ck2U5iYjIcVxnSUlJLiLqVJNtpI20s5U5dIQQqK2tnRmPx2VETFKNcKotgYjY0dHxJy3zjbSRdlZrD7/fv1Y1rYbBHCjLsoKIiiAIvk2bNo0hhMCIFhlpZ61jDgCwfPnyfEEQ/IqiqAQ+3CZRLbIQAKCioiJjZLZH2lnX1EjTkSNHbqbRKRnT05KIqDgcjjcpI44wyEiDsy5iU1RURAAAMjIyriSEAACkM8FHsrKyptPvI4nDkQZnbUizsLAwJ823JAAAmZmZ41RrboQ8RtpIzD+lZWZmjjDGSDv7GYRlWeF03DccDssjZDHSzmYGUQAAZFnuREQAgHTlLJBqkN4R7TrSzmYGQQCAhoaGzlgsxgIAURQlbWZRIpHo0vokI22knX0c8q9E4WeIqMiyLKUrD9LU1PRv2j5G2tnfiouLdTRsT9J+44qKigxEVD96zXfdV8ggGQAAHR0di7TEPYymUAg8v3r16kLaB/kKnoukzPHXYr5HWkorLS3VD2ZBKCRDf6bNERXmXlxcPEYUxT4NjP1UoSYSIip+v3/rV6E9qITTD2G+/y9bD0RbA3SSc3UAAG63e0oymXx1165dFw9b+GkXYOPGjVMsFsuPvF7vUofDsb6rq2sLy7J/dTgcj7a0tFyjXbji4mLdGZ6oDAAAp9P5TBrwWCrM5I4zzSDavtasWTPBbDYvdLlc/2O1Wjd1dXVt8Xg8Jd3d3Y/V1NRcm+75Vhmzn49OHVt/xKQ9rl4zgJBVz/lSPxTKM9C99QNp1xOM47jf6f+Zhw8fznc4HBae5/+3ra0tCxGz1H41Gjt1LsmXaoO0XFlVVTWPZdktoiiKA1FUPB5XOI6rNZlMP1Od/TNMWAQRdcXFxXnhcNhMfRH5FLSHjIjo8XiOAID+DJoyRO1r3759V/T19a0RBIEdaJyxWAwDgUB9Z2fnL/pjrq+DZB/yBJBBX6I9MZvjuLEAkH0yKwgA4I477jivvLz8RQDIOtFYTzh+Ws8NAKB3Op0rE4lEqnRN9vM51nw+X+WhQ4cuT9eiISIpLS3Vl5aW6k8kKdW+Wlpa7qB0PiTYO8VyJRVFQYPBcNsJxq+adGmpFVGZGwDAZrM9E41Gw0OZ70AgcKCiomL6qc63eg3Lsk8i4l5ZlmskSTLIslwny3I9Iq5/7bXXJsuyvBsRrwL4F3jztddem4yIuxFxOq2f2c0wzHLtfRcvXlzA8/zu3t7emwEAgsFgGSJWyrJci4g1oVCoqqen56lUwQwAelEU3+c47iOg4Xu1tGHlypVjXC7Xeo7jeI7jIhzH8X19fasff/zxPACAmpqa2Yi422QyXazez2KxLOZ53hQKhdwcxyUYhrF1d3c/qfZ76NChaxBxd29v71MAAAaDIRMAYMuWLdeEw+Hd+/btm3pssR555JFcl8v1uUawSiciNoqiVWsxUBRFprKy8vbhMMlAvg+1vTP6YxZ14ex2+59OoXAqgYhot9vf6W/c1DTISJV0qskwXObw+XwbUsGSg53vaDTqq6qqmqeVlkM1TwVBeJ/nebmhoWFla2vrm83NzW+0tLSsamtre2bVqlXX0a7na4nn9ddfv4Yen1taWlqgjq++vv576v1/+ctfXoiI2NPT8xANnWM8Ht8hSdKvE4nEMz6f711FUdDtdr+vjgcRSVNT0y3q/QwGw3eoYNIvWbIkUxCEykgkwjudzl/u3r37TovFslgUxajX690HANDY2HgPXcurAQDMZvNLVHivNxqN93Z1dd3t9Xr/jojocrn+CgBQXV19NyKiJEn46aefXqUyVllZ2W2IiPv37599jChcLtdWlcAGs+lBP04uCoIQPXTo0I1aB2mo5gb1fc6rqKiYc+DAge/s3bv30oFsds21ejopH6mEPwgIfAIRkWGYqkWLFo3S2rP9OM1k5cqV55aUlEx59tlnc/szS4fwnHoAAJ7n39eMQzkF5DFGIhGuoqJiOhUguqEyiCiK7/l8vs7+znn77bevpdpsrpZBVq1aNZMe//aOHTsKI5EIJ4pisyAI9iVLluQgInniiScuDIVCktVqXQhwFJ3AMMwi7f3b29vvR0RsbGy8XT0WCAS2OByOw263u8Xv93+oHrfZbI8hIv7zn/+8XHsPg8FwGyLKlZWVl9bU1MxBRIll2Uu2b98+gTLCstTncjqdxYiIFRUV57e2tt7MsmzS5/P5eZ6vVNd069at8wRBkCorK4/6fd3d3T/TEs0wIkEYDocdpaWl51L/QDcYiapK6JaWlts9Hs8/RVHkVCaNxWIxURSPWK3WP3744YfHohDae2ukcmZfX9+aFEKStRs20HHKVLrUFRcXn691erWMUVdXd73Van2TYZg2URS5YDCYEATB6ff7P+3o6HggNVoyWNPGarWWDHe+VSZhGOZIUVFR1ikyyAa/32/R+gPqXFIGQUS8OUWDXEWP31haWlogSVLCarUuEEWRt9lsbwIAvPjii5PC4TBardYHqKZCnuefoppilDoPwWCQYxjm7wAAmzdvHheJROTOzs77XC7XU/F4PLpx48ZcAACO46oCgUA9HV8WtTT09Bkustvto2tqam5DROzq6ip0OByPxeNx5dlnn81FRL3BYMg0GAyZiKgvLi4eI0lS0m63L66rq7s+FAopmzZt+hEN0jwOALBt27bbRVHEioqK64A6uT2UaIZbW5FERLTZbKWDMbVU5pg/f36G1Wpdm6K5vhS6FUUxYLVan001r1KleWdn569EUWRPwMzY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";
+
+// ============================================================
+// DATA
+// ============================================================
+var PIPELINES = {
+  P1:{id:"P1",label:"Captaci\u00f3n Asociada",economic:true,stages:[
+    {id:0,label:"Prospecto identificado",short:"Prospecto",prob:10},
+    {id:1,label:"Cualificada",short:"Cualificada",prob:25},
+    {id:2,label:"Reuni\u00f3n realizada",short:"Reuni\u00f3n",prob:40},
+    {id:3,label:"Interesada",short:"Interesada",prob:60},
+    {id:4,label:"Documentaci\u00f3n recibida",short:"Documentaci\u00f3n",prob:75},
+    {id:5,label:"En tramitaci\u00f3n",short:"Tramitaci\u00f3n",prob:90},
+    {id:6,label:"Asociada \u2713",short:"Asociada \u2713",prob:100}
+  ]},
+  P2:{id:"P2",label:"Onboarding",economic:false,stages:[
+    {id:0,label:"Alta completada",short:"Alta",prob:null},
+    {id:1,label:"Onboarding programado",short:"Programado",prob:null},
+    {id:2,label:"Onboarding realizado",short:"Realizado",prob:null},
+    {id:3,label:"Mesas activadas",short:"Mesas activ.",prob:null},
+    {id:4,label:"Primer contacto formaci\u00f3n",short:"Contacto form.",prob:null},
+    {id:5,label:"Activa en ecosistema \u2713",short:"Activa \u2713",prob:null}
+  ]},
+  P3:{id:"P3",label:"Venta Formaci\u00f3n",economic:true,stages:[
+    {id:0,label:"Lead recibido",short:"Lead",prob:15},
+    {id:1,label:"Cualificado",short:"Cualificado",prob:30},
+    {id:2,label:"Propuesta enviada",short:"Propuesta",prob:50},
+    {id:3,label:"En negociaci\u00f3n",short:"Negociaci\u00f3n",prob:65},
+    {id:4,label:"Comprometido",short:"Comprometido",prob:85},
+    {id:5,label:"Matr\u00edcula confirmada \u2713",short:"Matr\u00edcula \u2713",prob:100}
+  ]},
+  P4:{id:"P4",label:"Captaci\u00f3n FIINCA",economic:true,stages:[
+    {id:0,label:"Directivo identificado",short:"Identificado",prob:10},
+    {id:1,label:"Reuni\u00f3n presentaci\u00f3n",short:"Reuni\u00f3n",prob:30},
+    {id:2,label:"Propuesta enviada",short:"Propuesta",prob:50},
+    {id:3,label:"En valoraci\u00f3n",short:"Valoraci\u00f3n",prob:65},
+    {id:4,label:"Comprometido",short:"Comprometido",prob:85},
+    {id:5,label:"FIINCA activo \u2713",short:"Activo \u2713",prob:100}
+  ]}
+};
+
+
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+var notifications = [];
+var notifIdCounter = 1;
+
+function addNotif(type, title, body, pipeline, company, action) {
+  notifications.unshift({
+    id: notifIdCounter++,
+    type: type,       // 'overdue' | 'automation' | 'alert'
+    title: title,
+    body: body,
+    pipeline: pipeline || null,
+    company: company || null,
+    action: action || null,
+    date: nowStr(),
+    read: false
+  });
+  updateNotifBadge();
+}
+
+function markAllRead() {
+  notifications.forEach(function(n){ n.read = true; });
+  updateNotifBadge();
+  renderNotifications();
+}
+
+function clearNotif(id) {
+  notifications = notifications.filter(function(n){ return n.id !== id; });
+  updateNotifBadge();
+  renderNotifications();
+}
+
+function clearAllNotifs() {
+  notifications = [];
+  updateNotifBadge();
+  renderNotifications();
+}
+
+function updateNotifBadge() {
+  var unread = notifications.filter(function(n){ return !n.read; }).length;
+  var badge = document.getElementById("notif-badge");
+  if(badge) {
+    badge.textContent = unread > 0 ? unread : "";
+    badge.style.display = unread > 0 ? "inline-flex" : "none";
+  }
+  var btn = document.getElementById("btn-notif");
+  if(btn) {
+    btn.className = "btn btn-ghost" + (currentView==="notif"?" active":"") + (unread>0?" notif-active":"");
+  }
+}
+
+function checkOverdueNotifications() {
+  var active = leads.filter(function(l){ return !l.lost && l.stage >= 0; });
+  active.forEach(function(lead){
+    if(isOverdue(lead)) {
+      var key = "overdue-" + lead.id + "-" + lead.stage;
+      var alreadyNotified = notifications.find(function(n){ return n.body && n.body.indexOf(key) !== -1; });
+      if(!alreadyNotified) {
+        var maxD = getMaxDays(lead.pipeline, lead.stage);
+        var stageName = PIPELINES[lead.pipeline].stages[lead.stage] ? PIPELINES[lead.pipeline].stages[lead.stage].label : "";
+        var pipelineLabel = PIPELINES[lead.pipeline].label;
+        addNotif(
+          'overdue',
+          'Retraso · ' + lead.pipeline + ' · ' + lead.company,
+          '[' + key + '] Pipeline ' + lead.pipeline + ' (' + pipelineLabel + ') — ' + lead.company + ' lleva ' + lead.days + ' días en la etapa "' + stageName + '" (máximo configurado: ' + maxD + ' días). Comercial responsable: ' + lead.comercial + '.',
+          lead.pipeline,
+          lead.company,
+          lead.id
+        );
+      }
+    }
+  });
+
+  // P2 -> P3 alert: company in P2 for 21+ days with no active P3
+  var p2leads = leads.filter(function(l){ return l.pipeline==="P2" && !l.lost && l.days >= 21; });
+  p2leads.forEach(function(lead){
+    var hasP3 = leads.find(function(l){ return l.pipeline==="P3" && l.company===lead.company && !l.lost; });
+    if(!hasP3) {
+      var key = "p2p3-" + lead.id;
+      var alreadyNotified = notifications.find(function(n){ return n.body && n.body.indexOf(key) !== -1; });
+      if(!alreadyNotified) {
+        var stageName = PIPELINES["P2"].stages[lead.stage] ? PIPELINES["P2"].stages[lead.stage].label : "";
+        addNotif(
+          'alert',
+          'Alerta P2→P3 · ' + lead.company,
+          '[' + key + '] Pipeline P2 (Onboarding) — ' + lead.company + ' lleva ' + lead.days + ' días en onboarding (etapa: "' + stageName + '") sin ninguna oportunidad activa en P3 (Venta Formación). Comercial responsable: ' + lead.comercial + '. Considera iniciar una conversación de formación.',
+          'P2/P3',
+          lead.company,
+          lead.id
+        );
+      }
+    }
+  });
+}
+window.markAllRead = markAllRead;
+window.clearNotif = clearNotif;
+window.clearAllNotifs = clearAllNotifs;
+window.updateNotifBadge = updateNotifBadge;
+window.checkOverdueNotifications = checkOverdueNotifications;
+
+// ============================================================
+// CONFIG - Max days per stage per pipeline
+// ============================================================
+var stageConfig = {
+  P1: [14, 14, 14, 14, 14, 14, 14],
+  P2: [7, 14, 14, 14, 21, 21],
+  P3: [7, 10, 14, 14, 10, 7],
+  P4: [14, 14, 14, 14, 10, 7]
+};
+
+// ============================================================
+// CONCEPTOS DE INGRESO
+// ============================================================
+var conceptosIngreso = [
+  "Captación",
+  "Grupo de compras",
+  "Colaboraciones",
+  "First Level",
+  "Next Level",
+  "Directivo FIINCA",
+  "B2B Esade",
+  "Formación online"
+];
+// Conceptos que habilitan campo de matrículas
+var conceptosConMatriculas = ["First Level","Next Level","B2B Esade","Formación online"];
+
+// Segmentación por área
+var conceptosAreaEmpresas = ["Captación","Grupo de compras","Colaboraciones","Directivo FIINCA"];
+var conceptosAreaFormacion = ["First Level","Next Level","B2B Esade","Formación online"];
+
+// Selector de área activo en dashboard: 'all' | 'empresas' | 'formacion'
+var dashAreaFilter = 'all';
+
+function getMaxDays(pipeline, stageId) {
+  if(stageConfig[pipeline] && stageConfig[pipeline][stageId] != null)
+    return stageConfig[pipeline][stageId];
+  return 14;
+}
+
+function isOverdue(lead) {
+  if(lead.lost || lead.stage < 0) return false;
+  return lead.days > getMaxDays(lead.pipeline, lead.stage);
+}
+
+var leads = [
+  {id:1,pipeline:"P1",company:"Talleres Iraizoz S.L.",sector:"Metalurgia",stage:0,days:3,comercial:"R. Izquierdo",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Jon Iraizoz - Director General",lost:false,lostReason:"",obs:[{author:"Sistema",date:"14/05/2026",type:"system",text:"Lead creado desde campaña LinkedIn Navarra Industrial."},{author:"R. Izquierdo",date:"15/05/2026",type:"user",text:"Empresa con buen perfil. Cumple los 4 criterios."}]},
+  {id:2,pipeline:"P1",company:"Ekinsa Automatización",sector:"Automatización",stage:1,days:7,comercial:"R. Izquierdo",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Marta Lecumberri - Gerente",lost:false,lostReason:"",obs:[{author:"Sistema",date:"07/05/2026",type:"system",text:"Cualificada automáticamente."},{author:"R. Izquierdo",date:"12/05/2026",type:"user",text:"Llamada realizada. Muy receptiva. Reunión semana del 20."}]},
+  {id:3,pipeline:"P1",company:"Forjas del Arga S.A.",sector:"Forja",stage:2,days:16,comercial:"M. García",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Ignacio Galar - Dir. Operaciones",lost:false,lostReason:"",obs:[{author:"Sistema",date:"01/05/2026",type:"system",text:"Alerta: 16 días sin avance en etapa."},{author:"M. García",date:"10/05/2026",type:"alert",text:"Sin respuesta al email del 05/05. Posible conflicto interno."}]},
+  {id:4,pipeline:"P1",company:"Piezas Técnicas Navarra",sector:"Componentes",stage:3,days:5,comercial:"R. Izquierdo",importe:4800,probCustom:70,concepto:"Captación",matriculas:null,contact:"Ana Vidondo - CEO",lost:false,lostReason:"",obs:[{author:"R. Izquierdo",date:"10/05/2026",type:"user",text:"Ana ha pedido ficha de inscripción. Interesada en Mesa de RRHH."}]},
+  {id:5,pipeline:"P1",company:"Fundiciones Pamplona",sector:"Fundición",stage:4,days:2,comercial:"E. Fernández",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Pedro Asiáin - Gerente",lost:false,lostReason:"",obs:[{author:"E. Fernández",date:"13/05/2026",type:"user",text:"Documentación recibida completa."}]},
+  {id:6,pipeline:"P2",company:"Intasa Grupo Industrial",sector:"Holding",stage:1,days:4,comercial:"R. Izquierdo",importe:null,probCustom:null,concepto:null,matriculas:null,contact:"Elena Azcárate - Directora General",lost:false,lostReason:"",obs:[{author:"Sistema",date:"11/05/2026",type:"system",text:"P2 abierto automáticamente al cerrar P1."},{author:"R. Izquierdo",date:"12/05/2026",type:"user",text:"Onboarding agendado para el 19/05."}]},
+  {id:7,pipeline:"P3",company:"Cementos Portland Navarra",sector:"Construcción",stage:2,days:6,comercial:"M. García",importe:2400,probCustom:null,concepto:"First Level",matriculas:12,contact:"Laura Sanz - RRHH",lost:false,lostReason:"",obs:[{author:"M. García",date:"11/05/2026",type:"user",text:"Propuesta enviada para curso Lean Manufacturing (12 alumnos)."}]},
+  {id:8,pipeline:"P3",company:"Viscofan S.A.",sector:"Alimentación",stage:4,days:2,comercial:"E. Fernández",importe:6800,probCustom:null,concepto:"Next Level",matriculas:8,contact:"Mikel Etxeberria - Dir. Operaciones",lost:false,lostReason:"",obs:[{author:"E. Fernández",date:"14/05/2026",type:"user",text:"Comprometidos verbalmente programa directivo Q3."}]},
+  {id:9,pipeline:"P4",company:"Grupo Cívica",sector:"Servicios",stage:1,days:8,comercial:"R. Izquierdo",importe:3200,probCustom:null,concepto:"Directivo FIINCA",matriculas:null,contact:"Carlos Mendiola - CEO",lost:false,lostReason:"",obs:[{author:"Sistema",date:"08/05/2026",type:"system",text:"P4 sugerido desde P2 paso 3."},{author:"R. Izquierdo",date:"10/05/2026",type:"user",text:"Reunión FIINCA realizada. Carlos muy receptivo."}]},
+  {id:10,pipeline:"P1",company:"Metálicas Ilundáin",sector:"Metalurgia",stage:-1,days:22,comercial:"M. García",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Javier Ilundáin - Gerente",lost:true,lostReason:"Precio fuera de presupuesto",obs:[{author:"M. García",date:"02/05/2026",type:"alert",text:"La cuota anual es demasiado elevada para el momento actual."}]}
+];
+
+var comerciales = ["R. Izquierdo","M. García","E. Fernández","A. López"];
+var activePipeline = "P1";
+var currentView = "kanban";
+var dragId = null;
+var nextId = 20;
+var selectedLeadId = null;
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmt(n){ return n!=null ? new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(n) : "—"; }
+function pct(n){ return n!=null ? Math.round(n)+"%" : "—"; }
+function nowStr(){ var d=new Date(); return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear(); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function getProb(l){ return l.probCustom!=null ? l.probCustom : (!l.lost&&PIPELINES[l.pipeline] ? (PIPELINES[l.pipeline].stages[l.stage] ? PIPELINES[l.pipeline].stages[l.stage].prob : null) : null); }
+function getLead(id){ return leads.find(function(l){return l.id===id;}); }
+
+// ============================================================
+// RENDER KPIs
+// ============================================================
+function renderKPIs(){
+  var eco=leads.filter(function(l){return PIPELINES[l.pipeline].economic&&l.importe!=null&&!l.lost;});
+  var active=leads.filter(function(l){return !l.lost;});
+  var lostEco=leads.filter(function(l){return PIPELINES[l.pipeline].economic&&l.importe!=null&&l.lost;});
+  var total=eco.reduce(function(s,l){return s+l.importe;},0);
+  var weighted=eco.reduce(function(s,l){var p=getProb(l);return s+(p!=null?l.importe*p/100:0);},0);
+  var lostTotal=lostEco.reduce(function(s,l){return s+l.importe;},0);
+  var totalMat=eco.reduce(function(s,l){return s+(l.matriculas||0);},0);
+  var active2=leads.filter(function(l){return !l.lost;}).length;
+  var lost=leads.filter(function(l){return l.lost;}).length;
+  var pm=total>0?Math.round(weighted/total*100):0;
+  var items=[
+    {v:active2,l:"Activas",r:false},
+    {v:fmt(total),l:"Total pipeline",r:false},
+    {v:fmt(weighted),l:"Ponderado",r:false},
+    {v:pct(pm),l:"Prob. media",r:false},
+    {v:totalMat,l:"Matr\u00edculas",r:false},
+    {v:lost,l:"Perdidas",r:true},
+    {v:fmt(lostTotal),l:"Importe perdido",r:true}
+  ];
+  document.getElementById("kpibar").innerHTML=items.map(function(k){
+    return '<div class="kpi"><div class="kpi-v'+(k.r?" red":"")+'">'+k.v+'</div><div class="kpi-l">'+k.l+'</div></div>';
+  }).join("");
+}
+
+function renderNav(){
+  document.getElementById("nav-pipelines").innerHTML=Object.values(PIPELINES).map(function(p){
+    return '<button class="btn btn-ghost'+(activePipeline===p.id?" active":"")+'" onclick="setPipeline(\''+p.id+'\')">'+p.id+' &middot; '+esc(p.label)+'</button>';
+  }).join("");
+}
+
+// ============================================================
+// KANBAN
+// ============================================================
+function renderKanban(){
+  var pipeline=PIPELINES[activePipeline];
+  var pLeads=leads.filter(function(l){return l.pipeline===activePipeline&&!l.lost;});
+  var lLeads=leads.filter(function(l){return l.pipeline===activePipeline&&l.lost;});
+  var allCols=pipeline.stages.concat([{id:"lost",label:"Perdidas",short:"Perdidas",lost:true}]);
+  var html='<div class="kanban">';
+  allCols.forEach(function(stage){
+    var isLost=stage.id==="lost";
+    var sl=isLost?lLeads:pLeads.filter(function(l){return l.stage===stage.id;});
+    html+='<div class="kcol'+(isLost?" lost-col":"")+'"><div class="col-hdr'+(isLost?" lost":"")+'"><span>'+(isLost?"&#10060; ":"")+esc(stage.short)+'</span><span class="col-badge">'+sl.length+'</span></div>';
+    html+='<div class="col-body'+(isLost?" lost-body":"")+'" id="col-'+stage.id+'" ondragover="event.preventDefault();colOver(\''+stage.id+'\')" ondragleave="colLeave(\''+stage.id+'\')" ondrop="colDrop(\''+stage.id+'\')">';
+    sl.forEach(function(lead){
+      var prob=getProb(lead);
+      var isC=lead.probCustom!=null;
+      var p=PIPELINES[lead.pipeline];
+      var cardClass = 'card'+(isLost?' lostcard':isOverdue(lead)?' warn':'');
+      var cardDraggable = isLost ? '' : 'draggable="true" ondragstart="dragStart('+lead.id+')" ';
+      html += '<div class="'+cardClass+'" id="card-'+lead.id+'" '+cardDraggable+'onclick="openLead('+lead.id+')">';
+      html+='<div class="card-co">'+esc(lead.company)+'</div><div class="card-sec">'+esc(lead.sector)+'</div>';
+      if(isLost&&lead.lostReason) html+='<div class="card-lreason">'+esc(lead.lostReason)+'</div>';
+      if(!isLost){
+        var lastName=lead.comercial.split(" ").slice(-1)[0];
+        html+='<div class="card-row"><span class="card-com">'+esc(lastName)+'</span><span class="card-pip">'+lead.pipeline+'</span></div>';
+        html+='<div class="card-bot"><span class="card-days'+(isOverdue(lead)?" al":"")+'">'+lead.days+'d'+(lead.days>14?" &#9888;":"")+'</span>';
+        if(prob!=null) html+='<span class="card-prob'+(isC?" cust":"")+'">'+pct(prob)+(isC?"*":"")+'</span>';
+        html+='</div>';
+        if(p.economic&&lead.importe) html+='<div class="card-imp">'+fmt(lead.importe)+'</div>';
+      }
+      if(isLost) html+='<button class="recover-btn" onclick="event.stopPropagation();recoverLead('+lead.id+')">&#8617; Recuperar oportunidad</button>';
+      html+='</div>';
+    });
+    if(!isLost) html+='<button class="add-btn" onclick="openNewLead('+stage.id+')">+</button>';
+    html+='</div></div>';
+  });
+  html+='</div>';
+  document.getElementById("main-content").innerHTML=html;
+}
+
+function colOver(sid){
+  var el=document.getElementById("col-"+sid);
+  if(el){el.classList.remove("over","over-lost");el.classList.add(sid==="lost"?"over-lost":"over");}
+}
+function colLeave(sid){
+  var el=document.getElementById("col-"+sid);
+  if(el)el.classList.remove("over","over-lost");
+}
+function colDrop(sid){
+  colLeave(sid);
+  if(dragId==null)return;
+  if(sid==="lost"){ var tmp=dragId; dragId=null; openLostModal(tmp); }
+  else{ var l=getLead(dragId); if(l){l.stage=Number(sid);l.days=0; var _l=l;} dragId=null; refresh(); setTimeout(function(){checkAndTriggerAutomations(_l);},100); }
+}
+function dragStart(id){
+  dragId=id;
+  setTimeout(function(){var el=document.getElementById("card-"+id);if(el)el.classList.add("dragging");},0);
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(){
+  var active=leads.filter(function(l){return !l.lost;});
+  var lostAll=leads.filter(function(l){return l.lost;});
+  var eco=active.filter(function(l){return PIPELINES[l.pipeline].economic&&l.importe;});
+  var total=eco.reduce(function(s,l){return s+l.importe;},0);
+  var weighted=eco.reduce(function(s,l){var p=getProb(l);return s+(p!=null?l.importe*p/100:0);},0);
+  var pm=total>0?Math.round(weighted/total*100):0;
+  var lostTotal=lostAll.filter(function(l){return l.importe;}).reduce(function(s,l){return s+l.importe;},0);
+
+  var byC={};
+  active.forEach(function(l){
+    if(!byC[l.comercial])byC[l.comercial]={n:0,imp:0,pond:0,lost:0};
+    byC[l.comercial].n++;
+    var p=PIPELINES[l.pipeline];
+    if(p.economic&&l.importe){byC[l.comercial].imp+=l.importe;var pr=getProb(l);if(pr!=null)byC[l.comercial].pond+=l.importe*pr/100;}
+  });
+  lostAll.forEach(function(l){if(!byC[l.comercial])byC[l.comercial]={n:0,imp:0,pond:0,lost:0};byC[l.comercial].lost++;});
+  var maxImp=1;
+  Object.values(byC).forEach(function(d){if(d.imp>maxImp)maxImp=d.imp;});
+
+  var lostReasons={};
+  lostAll.forEach(function(l){var r=l.lostReason||"Sin especificar";if(!lostReasons[r])lostReasons[r]=0;lostReasons[r]++;});
+
+  var html='<div class="dash-grid">';
+  html+='<div class="dash-kpi"><div class="dash-kpi-v">'+active.length+'</div><div class="dash-kpi-l">Oportunidades activas</div></div>';
+  html+='<div class="dash-kpi"><div class="dash-kpi-v">'+fmt(total)+'</div><div class="dash-kpi-l">Total pipeline</div></div>';
+  html+='<div class="dash-kpi"><div class="dash-kpi-v">'+fmt(weighted)+'</div><div class="dash-kpi-l">Importe ponderado</div></div>';
+  html+='<div class="dash-kpi"><div class="dash-kpi-v">'+pct(pm)+'</div><div class="dash-kpi-l">Probabilidad media</div></div>';
+  html+='<div class="dash-kpi"><div class="dash-kpi-v red">'+lostAll.length+'</div><div class="dash-kpi-l">Perdidas</div></div>';
+  html+='<div class="dash-kpi"><div class="dash-kpi-v red">'+fmt(lostTotal)+'</div><div class="dash-kpi-l">Importe perdido</div></div>';
+  html+='</div><div class="dash-row"><div class="dash-card"><div class="dash-ct">Importe ponderado vs. total por pipeline</div>';
+
+  Object.values(PIPELINES).filter(function(p){return p.economic;}).forEach(function(p){
+    var pl=active.filter(function(l){return l.pipeline===p.id;});
+    var imp=pl.reduce(function(s,l){return s+(l.importe||0);},0);
+    var pond=pl.reduce(function(s,l){var pr=getProb(l);return s+(pr!=null&&l.importe?l.importe*pr/100:0);},0);
+    var w=imp>0?Math.round(pond/imp*100):0;
+    html+='<div class="brow"><div class="blbl"><span style="font-weight:700">'+p.id+' &middot; '+esc(p.label)+' ('+pl.length+')</span><span style="color:var(--fp);font-weight:700">'+fmt(pond)+'</span></div><div class="btrack"><div class="bbg"></div><div class="bfill" style="width:'+w+'%"></div></div><div class="bsub">'+fmt(imp)+' total &middot; '+w+'% ponderado</div></div>';
+  });
+
+  html+='</div><div class="dash-card"><div class="dash-ct">Rendimiento por comercial</div>';
+  Object.entries(byC).sort(function(a,b){return b[1].imp-a[1].imp;}).forEach(function(entry){
+    var name=entry[0]; var d=entry[1];
+    var initials=name.split(" ").map(function(n){return n[0];}).join("").slice(0,2);
+    var w=Math.round(d.imp/maxImp*100);
+    html+='<div style="margin-bottom:12px"><div class="crow"><div style="display:flex;align-items:center;gap:10px"><div class="cav">'+esc(initials)+'</div><div><div class="cname">'+esc(name)+'</div><div class="csub">'+d.n+' activas'+(d.lost?" &middot; "+d.lost+" perd.":"")+'</div></div></div><div><div class="cimp">'+fmt(d.imp)+'</div><div class="cpond">pond. '+fmt(d.pond)+'</div></div></div><div class="btrack" style="height:6px"><div class="bbg"></div><div class="bfill" style="width:'+w+'%;height:100%"></div></div></div>';
+  });
+  html+='</div></div>';
+
+  if(Object.keys(lostReasons).length>0){
+    html+='<div class="dash-card" style="background:#FFF8F8;border-color:#F5C0C0"><div class="dash-ct" style="color:#922B21">Motivos de p&eacute;rdida</div><div class="lost-reasons">';
+    Object.entries(lostReasons).sort(function(a,b){return b[1]-a[1];}).forEach(function(e){
+      html+='<div class="lrc"><span class="lrn">'+e[1]+'&times; </span>'+esc(e[0])+'</div>';
+    });
+    html+='</div></div>';
+  }
+
+  // ---- INGRESOS POR CONCEPTO con selector de área ----
+  var byConcepto={};
+  conceptosIngreso.forEach(function(c){ byConcepto[c]={imp:0,pond:0,mat:0,n:0}; });
+  eco.forEach(function(l){
+    var pr=getProb(l);
+    if(l.concepto&&byConcepto[l.concepto]){
+      byConcepto[l.concepto].n++;
+      byConcepto[l.concepto].imp+=l.importe||0;
+      if(pr!=null) byConcepto[l.concepto].pond+=((l.importe||0)*pr/100);
+      if(l.matriculas) byConcepto[l.concepto].mat+=l.matriculas;
+    }
+  });
+
+  // Colores diferenciados por área
+  var coloresEmpresas=["#0C5580","#25618B","#1D6FA4","#14405A"];
+  var coloresFormacion=["#1D9E75","#25B38A","#B0D1D7","#3481A8"];
+  function colorConcepto(c,i){
+    if(conceptosAreaEmpresas.indexOf(c)!==-1) return coloresEmpresas[conceptosAreaEmpresas.indexOf(c)%coloresEmpresas.length];
+    return coloresFormacion[conceptosAreaFormacion.indexOf(c)%coloresFormacion.length];
+  }
+
+  // Resúmenes por área
+  function sumArea(lista){
+    return lista.reduce(function(acc,c){
+      var d=byConcepto[c]||{imp:0,pond:0,mat:0,n:0};
+      acc.imp+=d.imp; acc.pond+=d.pond; acc.mat+=d.mat; acc.n+=d.n; return acc;
+    },{imp:0,pond:0,mat:0,n:0});
+  }
+  var sumEmp=sumArea(conceptosAreaEmpresas);
+  var sumFor=sumArea(conceptosAreaFormacion);
+
+  // Filtro activo
+  var filteredConceptos=conceptosIngreso;
+  if(dashAreaFilter==='empresas') filteredConceptos=conceptosAreaEmpresas;
+  if(dashAreaFilter==='formacion') filteredConceptos=conceptosAreaFormacion;
+
+  var maxConc=1;
+  filteredConceptos.forEach(function(c){if(byConcepto[c]&&byConcepto[c].imp>maxConc)maxConc=byConcepto[c].imp;});
+
+  html+='<div class="dash-row"><div class="dash-card" style="grid-column:1/-1">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">';
+  html+='<div class="dash-ct" style="margin-bottom:0">Distribuci&oacute;n de ingresos por concepto de producto</div>';
+  // Selector de área
+  html+='<div style="display:flex;gap:6px;align-items:center">';
+  html+='<span style="font-size:10px;color:var(--fmu);text-transform:uppercase;letter-spacing:.05em">Área:</span>';
+  var areaBtns=[
+    {v:'all',    l:'Todas las áreas',  s:null},
+    {v:'empresas', l:'🏭 Empresas',    s:'#0C5580'},
+    {v:'formacion',l:'🎓 Formación',   s:'#1D9E75'}
+  ];
+  areaBtns.forEach(function(b){
+    var isActive=dashAreaFilter===b.v;
+    html+='<button onclick="setDashArea(\''+b.v+'\')" style="font-size:11px;font-family:inherit;font-weight:'+(isActive?'700':'500')+';cursor:pointer;padding:4px 10px;border-radius:5px;border:1px solid '+(isActive?(b.s||'var(--fp)'):'var(--fl)')+';background:'+(isActive?(b.s?b.s+'22':'rgba(12,85,128,.10)'):'#fff')+';color:'+(isActive?(b.s||'var(--fp)'):'var(--fmu)')+'">'+b.l+'</button>';
+  });
+  html+='</div></div>';
+
+  // Resumen totales por área (siempre visible)
+  html+='<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
+  // Área Empresas
+  html+='<div style="flex:1;min-width:200px;background:#EEF5F7;border:1px solid var(--fl);border-radius:8px;padding:12px 16px;border-left:4px solid #0C5580;'+(dashAreaFilter==='empresas'?'box-shadow:0 0 0 2px #0C5580;':'')+'">';
+  html+='<div style="font-size:10px;font-weight:700;color:#0C5580;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">🏭 Área Empresas</div>';
+  html+='<div style="font-size:20px;font-weight:700;color:var(--fp)">'+fmt(sumEmp.imp)+'</div>';
+  html+='<div style="font-size:10px;color:var(--fmu)">pond. '+fmt(sumEmp.pond)+' &middot; '+sumEmp.n+' oport.</div>';
+  html+='</div>';
+  // Área Formación
+  html+='<div style="flex:1;min-width:200px;background:#F0FAF6;border:1px solid #B2DFD0;border-radius:8px;padding:12px 16px;border-left:4px solid #1D9E75;'+(dashAreaFilter==='formacion'?'box-shadow:0 0 0 2px #1D9E75;':'')+'">';
+  html+='<div style="font-size:10px;font-weight:700;color:#1D9E75;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">🎓 Área Formación</div>';
+  html+='<div style="font-size:20px;font-weight:700;color:#1D9E75">'+fmt(sumFor.imp)+'</div>';
+  html+='<div style="font-size:10px;color:var(--fmu)">pond. '+fmt(sumFor.pond)+' &middot; '+sumFor.n+' oport.'+(sumFor.mat>0?' &middot; '+sumFor.mat+' matr.':'')+'</div>';
+  html+='</div>';
+  html+='</div>';
+
+  // Tarjetas de concepto (filtradas)
+  html+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">';
+  filteredConceptos.forEach(function(c){
+    var d=byConcepto[c]; if(!d||d.imp===0&&d.n===0) return;
+    var col=colorConcepto(c);
+    html+='<div style="background:#fff;border:1px solid var(--fl);border-radius:7px;padding:10px 14px;flex:1;min-width:120px;border-top:3px solid '+col+'">'
+      +'<div style="font-size:11px;font-weight:700;color:'+col+';margin-bottom:4px">'+esc(c)+'</div>'
+      +'<div style="font-size:18px;font-weight:700;color:var(--fp)">'+fmt(d.imp)+'</div>'
+      +'<div style="font-size:10px;color:var(--fmu)">pond. '+fmt(d.pond)+'</div>'
+      +(d.mat>0?'<div style="font-size:10px;color:#1D9E75;font-weight:700;margin-top:3px">&#127891; '+d.mat+' matr.</div>':"")
+      +'</div>';
+  });
+  html+='</div>';
+  // Barras
+  html+='<div>';
+  filteredConceptos.forEach(function(c){
+    var d=byConcepto[c]; if(!d||d.imp===0) return;
+    var col=colorConcepto(c);
+    var p=Math.round(d.imp/maxConc*100);
+    html+='<div class="brow"><div class="blbl"><span style="font-weight:700;color:'+col+'">'+esc(c)+'</span><span style="color:var(--fp);font-weight:700">'+fmt(d.imp)+'</span></div>'
+      +'<div class="btrack"><div class="bbg"></div><div class="bfill" style="width:'+p+'%;background:'+col+'"></div></div>'
+      +'<div class="bsub">'+d.n+' oportunidad'+(d.n!==1?"es":"")+(d.mat>0?' &middot; '+d.mat+' matr.':"")+' &middot; pond. '+fmt(d.pond)+'</div></div>';
+  });
+  html+='</div></div></div>';
+
+  // ---- MATRÍCULAS POR CATEGORÍA ----
+  var matCats=conceptosConMatriculas.slice();
+  var matData={};
+  matCats.forEach(function(c){matData[c]=0;});
+  eco.forEach(function(l){
+    if(l.matriculas&&l.concepto&&matData.hasOwnProperty(l.concepto)){
+      matData[l.concepto]+=l.matriculas;
+    }
+  });
+  var totalMat=Object.values(matData).reduce(function(s,v){return s+v;},0);
+  if(totalMat>0&&(dashAreaFilter==='all'||dashAreaFilter==='formacion')){
+    html+='<div class="dash-card"><div class="dash-ct">&#127891; Matr&iacute;culas confirmadas por categor&iacute;a formativa</div>';
+    html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">';
+    matCats.forEach(function(c,i){
+      var v=matData[c];
+      var col=coloresFormacion[i%coloresFormacion.length];
+      html+='<div style="background:var(--fb);border:1px solid var(--fl);border-radius:7px;padding:10px 14px;flex:1;min-width:110px;text-align:center;border-top:3px solid '+col+'">'
+        +'<div style="font-size:24px;font-weight:700;color:'+col+'">'+v+'</div>'
+        +'<div style="font-size:10px;color:var(--fmu);margin-top:3px">'+esc(c)+'</div>'
+        +'</div>';
+    });
+    html+='</div>';
+    html+='<div style="text-align:center;font-size:11px;color:var(--fmu)">Total matr&iacute;culas: <strong style="color:var(--fp);font-size:14px">'+totalMat+'</strong></div>';
+    html+='</div>';
+  }
+
+  document.getElementById("main-content").innerHTML=html;
+}
+
+function setDashArea(area){
+  dashAreaFilter=area;
+  renderDashboard();
+}
+window.setDashArea=setDashArea;
+
+// ============================================================
+// MODALS
+// ============================================================
+function showModal(html, blue){
+  var box=document.getElementById("modal-box");
+  box.className="modal"+(blue?" btop":"");
+  box.innerHTML=html;
+  document.getElementById("overlay").style.display="flex";
+}
+function closeModal(){ document.getElementById("overlay").style.display="none"; selectedLeadId=null; }
+function overlayClickHandler(e){ if(e.target.id==="overlay")closeModal(); }
+
+function openLead(id){
+  selectedLeadId=id;
+  renderLeadModal(id);
+}
+
+function renderLeadModal(id){
+  var lead=getLead(id); if(!lead)return;
+  var pipeline=PIPELINES[lead.pipeline];
+  var stages=pipeline.stages;
+  var cur=stages[lead.stage];
+  var nxt=stages[lead.stage+1];
+  var prob=getProb(lead);
+  var isC=lead.probCustom!=null;
+
+  var stageBar=stages.map(function(s,i){
+    return '<div class="sdot'+(i<lead.stage?" done":i===lead.stage?" cur":"")+'"></div>';
+  }).join("");
+
+  var comOptions=comerciales.map(function(c){
+    return '<option value="'+esc(c)+'"'+(c===lead.comercial?" selected":"")+'>'+esc(c)+'</option>';
+  }).join("");
+
+  var obsHtml=lead.obs.map(function(o){
+    return '<div class="obs-e'+(o.type==="system"?" sys":o.type==="alert"?" al":"")+'">'
+      +'<div class="obs-meta"><span class="obs-auth">'+esc(o.author)+'</span><span>'+esc(o.date)+'</span>'
+      +(o.type==="system"?'<span class="obs-badge s">AUTO</span>':"")
+      +(o.type==="alert"?'<span class="obs-badge a">ALERTA</span>':"")
+      +'</div><div class="obs-txt">'+esc(o.text)+'</div></div>';
+  }).join("");
+
+  var probField="";
+  if(cur&&cur.prob!=null){
+    probField='<div class="fgrp"><div class="flbl">Probabilidad'+(isC?'<span style="color:var(--fr);margin-left:4px">&middot; personalizada</span>':"")+'</div>'
+      +'<div class="prob-row"><input class="inp prob-inp'+(isC?" cust":"")+'" id="lead-prob-'+id+'" type="number" min="0" max="100" value="'+(prob!=null?prob:"")+'" oninput="liveSetProb('+id+',this.value)">'
+      +'<span style="font-size:13px;color:var(--fmu)">%</span>'
+      +(isC?'<button class="prob-reset" onclick="resetProb('+id+')">&#8617; Restablecer ('+cur.prob+'%)</button>':"")
+      +'</div></div>';
+  }
+
+  var importeField=pipeline.economic
+    ?'<div class="fgrp"><div class="flbl">Importe (&euro;)</div><input class="inp" id="lead-importe-'+id+'" type="number" value="'+(lead.importe||"")+'" placeholder="0" oninput="liveSetImporte('+id+',this.value)"></div>'
+    :"";
+
+  var concOptions='<option value="">-- Sin especificar --</option>'+conceptosIngreso.map(function(c){
+    return '<option value="'+esc(c)+'"'+(c===lead.concepto?' selected':'')+'>'+esc(c)+'</option>';
+  }).join("");
+  var conceptoField=pipeline.economic
+    ?'<div class="fgrp"><div class="flbl">Concepto de ingreso</div><select class="inp" id="concepto-sel-'+id+'" onchange="liveSetConcepto('+id+',this.value)">'+concOptions+'</select></div>'
+    :"";
+  var showMat=lead.concepto&&conceptosConMatriculas.indexOf(lead.concepto)!==-1;
+  var matriculasField=pipeline.economic
+    ?'<div id="mat-wrap-'+id+'" style="'+(showMat?'':'display:none')+'">'
+      +'<div class="fgrp"><div class="flbl">N&ordm; matr&iacute;culas</div>'
+      +'<input class="inp" type="number" min="1" id="mat-inp-'+id+'" value="'+(lead.matriculas||"")+'" placeholder="Ej: 10" oninput="liveSetMatriculas('+id+',this.value)">'
+      +'</div></div>'
+    :"";
+
+  var pondVal=(lead.importe&&prob!=null)?fmt(lead.importe*prob/100):"—";
+  var ponderadoField=pipeline.economic
+    ?'<div class="fgrp"><div class="flbl">Importe ponderado</div><div class="fval" id="lead-pond-'+id+'" style="color:var(--fp)">'+pondVal+'</div></div>'
+    :"";
+
+  var html='<div class="mhdr"><div>'
+    +'<div class="mhdr-co">'+esc(lead.company)+'</div>'
+    +'<div class="mhdr-sub">'+esc(lead.sector)+' &middot; '+esc(lead.contact)+'</div>'
+    +'<span class="mbadge" style="background:var(--fr);color:#fff">'+lead.pipeline+'</span>'
+    +'<span class="mbadge" style="background:rgba(255,255,255,.2);color:#fff">'+esc(pipeline.label)+'</span>'
+    +'</div><button class="mclose" onclick="closeModal()">&times;</button></div>'
+    +'<div class="mbody">'
+    +'<div class="stitle">Situaci&oacute;n actual</div>'
+    +'<div class="stagebar">'+stageBar+'</div>'
+    +'<div class="slabel"><span class="snum">'+(lead.stage+1)+'</span>'+(cur?esc(cur.label):"&mdash;")+'</div>'
+    +'<div class="fgrid"><div class="fgrp"><div class="flbl">Comercial asignado</div><select class="inp" id="lead-comercial-'+id+'" onchange="liveSetComercial('+id+',this.value)">'+comOptions+'</select></div>'
+    +'<div class="fgrp"><div class="flbl">D&iacute;as en etapa</div><div class="fval'+(isOverdue(lead)?" al":"")+'">'+lead.days+' d&iacute;as'+(lead.days>14?" &#9888;":"")+'</div></div>'
+    +importeField+conceptoField+matriculasField+probField+ponderadoField+'</div>'
+    +'<div class="stitle mt16">Observaciones y trazabilidad</div>'
+    +'<div class="obs-list" id="obs-list-'+id+'">'+obsHtml+'</div>'
+    +'<textarea class="obs-ta" id="obs-input-'+id+'" placeholder="A&ntilde;adir observaci&oacute;n, nota de llamada, acuerdo alcanzado&hellip;"></textarea>'
+    +'<div style="display:flex;justify-content:flex-end;margin-top:6px;margin-bottom:4px"><button class="btn btn-primary" onclick="addObs('+id+')">&#9998; Guardar nota</button></div>'
+    +'<div class="mactions"><button class="btn btn-lostout" onclick="openLostModalFromLead('+id+')">&#10005; Marcar como perdida</button>'
+    +'<button class="btn btn-danger" onclick="confirmDeleteLead('+id+')" style="background:#7B0000;margin-left:6px">&#128465; Eliminar ficha</button>'
+    +(nxt?'<button class="btn btn-danger" onclick="advanceStage('+id+')" style="margin-left:auto">&rarr; Avanzar a: '+esc(nxt.short)+'</button>':"")
+    +'</div></div>';
+  showModal(html);
+}
+
+// Live setters — save immediately and update ponderado inline without re-rendering the modal
+function refreshPonderado(id){
+  var l=getLead(id); if(!l)return;
+  var el=document.getElementById("lead-pond-"+id); if(!el)return;
+  var p=getProb(l);
+  el.textContent=(l.importe&&p!=null)?fmt(l.importe*p/100):"—";
+}
+function liveSetComercial(id,val){ var l=getLead(id);if(l)l.comercial=val; renderKPIs(); if(currentView==="kanban")renderKanban(); }
+function liveSetImporte(id,val){ var l=getLead(id);if(!l)return; l.importe=val?Number(val):null; refreshPonderado(id); renderKPIs(); if(currentView==="kanban")renderKanban(); }
+function liveSetProb(id,val){ var l=getLead(id);if(!l)return; l.probCustom=val!==""?Number(val):null; refreshPonderado(id); renderKPIs(); if(currentView==="kanban")renderKanban(); }
+function liveSetConcepto(id,val){
+  var l=getLead(id); if(!l)return;
+  l.concepto=val||null;
+  if(!val||conceptosConMatriculas.indexOf(val)===-1){ l.matriculas=null; }
+  var wrap=document.getElementById("mat-wrap-"+id);
+  if(wrap) wrap.style.display=(val&&conceptosConMatriculas.indexOf(val)!==-1)?"block":"none";
+  renderKPIs(); if(currentView==="kanban")renderKanban();
+}
+function liveSetMatriculas(id,val){ var l=getLead(id);if(!l)return; l.matriculas=val?Number(val):null; renderKPIs(); if(currentView==="kanban")renderKanban(); }
+window.liveSetComercial=liveSetComercial;
+window.liveSetImporte=liveSetImporte;
+window.liveSetProb=liveSetProb;
+window.liveSetConcepto=liveSetConcepto;
+window.liveSetMatriculas=liveSetMatriculas;
+
+function setComercial(id,val){ var l=getLead(id);if(l){l.comercial=val;}renderKPIs(); }
+function setImporte(id,val){ var l=getLead(id);if(l){l.importe=val?Number(val):null;}renderKPIs(); }
+function setProb(id,val){ var l=getLead(id);if(l){l.probCustom=val!==""?Number(val):null;}renderKPIs(); }
+function resetProb(id){
+  var l=getLead(id);if(!l)return;
+  l.probCustom=null;
+  if(selectedLeadId===id) renderLeadModal(id);
+  renderKPIs();
+}
+function setConcepto(id,val){
+  var l=getLead(id); if(!l)return;
+  l.concepto=val||null;
+  if(!val||conceptosConMatriculas.indexOf(val)===-1) l.matriculas=null;
+  renderKPIs();
+}
+function setMatriculas(id,val){
+  var l=getLead(id); if(!l)return;
+  l.matriculas=val?Number(val):null;
+  renderKPIs();
+}
+function confirmDeleteLead(id){
+  var l=getLead(id); if(!l)return;
+  var html='<div class="mhdr" style="border-radius:6px 6px 0 0;background:#7B0000"><div><div class="mhdr-co">&#128465; Eliminar ficha</div><div class="mhdr-sub">'+esc(l.company)+'</div></div><button class="mclose" onclick="openLead('+id+')">&times;</button></div>'
+    +'<div class="mbody"><div style="background:#FFF0F0;border-left:3px solid var(--fr);border-radius:0 5px 5px 0;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#7B0000">'
+    +'&#9888; Esta acci&oacute;n es <strong>irreversible</strong>. La ficha de <strong>'+esc(l.company)+'</strong> y todo su historial de observaciones ser&aacute;n eliminados permanentemente.</div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button class="btn btn-outline" onclick="openLead('+id+')">Cancelar</button>'
+    +'<button class="btn btn-danger" onclick="deleteLead('+id+')" style="background:#7B0000">&#128465; S&iacute;, eliminar</button>'
+    +'</div></div>';
+  showModal(html, true);
+}
+function deleteLead(id){
+  leads=leads.filter(function(l){return l.id!==id;});
+  closeModal();
+  refresh();
+}
+window.confirmDeleteLead=confirmDeleteLead;
+window.deleteLead=deleteLead;
+function addObs(id){
+  var txt=inp?inp.value.trim():"";
+  if(!txt)return;
+  var l=getLead(id);
+  if(l){l.obs.push({author:"R. Izquierdo",date:nowStr(),type:"user",text:txt});}
+  inp.value="";
+  var list=document.getElementById("obs-list-"+id);
+  if(list){
+    var div=document.createElement("div");
+    div.className="obs-e";
+    div.innerHTML='<div class="obs-meta"><span class="obs-auth">R. Izquierdo</span><span>'+nowStr()+'</span></div><div class="obs-txt">'+esc(txt)+'</div>';
+    list.appendChild(div);
+    list.scrollTop=list.scrollHeight;
+  }
+}
+function advanceStage(id){
+  var l=getLead(id);if(!l)return;
+  var max=PIPELINES[l.pipeline].stages.length-1;
+  if(l.stage<max){l.stage++;l.days=0;}
+  closeModal();refresh();
+  setTimeout(function(){checkAndTriggerAutomations(l);},100);
+}
+function recoverLead(id){
+  var l=getLead(id);if(!l)return;
+  l.lost=false;l.stage=0;l.lostReason="";
+  l.obs.push({author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad recuperada y devuelta a primera etapa."});
+  refresh();
+  setTimeout(function(){ checkAndTriggerAutomations(l); },150);
+}
+
+// ============================================================
+// LOST MODAL
+// ============================================================
+function openLostModalFromLead(id){ closeModal(); setTimeout(function(){openLostModal(id);},50); }
+function openLostModal(id){
+  var l=getLead(id);if(!l)return;
+  var html='<div class="mhdr" style="border-radius:6px 6px 0 0"><div><div class="mhdr-co">Marcar como perdida</div><div class="mhdr-sub">'+esc(l.company)+'</div></div><button class="mclose" onclick="closeModal()">&times;</button></div>'
+    +'<div class="mbody"><div class="fgrp" style="margin-bottom:14px"><div class="flbl">Motivo de la p&eacute;rdida</div>'
+    +'<textarea class="obs-ta" id="lost-reason-inp" placeholder="Ej: precio fuera de presupuesto, sin inter&eacute;s, competencia, timing&hellip;"></textarea></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button>'
+    +'<button class="btn btn-danger" onclick="confirmLost('+id+')">Confirmar p&eacute;rdida</button></div></div>';
+  showModal(html,true);
+}
+function confirmLost(id){
+  var inp=document.getElementById("lost-reason-inp");
+  var reason=inp?inp.value.trim():"";
+  var l=getLead(id);if(!l)return;
+  l.lost=true;l.stage=-1;l.lostReason=reason;
+  l.obs.push({author:"Sistema",date:nowStr(),type:"alert",text:"Marcada como perdida. Motivo: "+(reason||"Sin especificar")});
+  closeModal();refresh();
+}
+
+// ============================================================
+// NEW LEAD MODAL
+// ============================================================
+function openNewLead(stageId){
+  var comOptions=comerciales.map(function(c){return '<option>'+esc(c)+'</option>';}).join("");
+  var concOptions='<option value="">-- Sin especificar --</option>'+conceptosIngreso.map(function(c){return '<option value="'+esc(c)+'">'+esc(c)+'</option>';}).join("");
+  var html='<div class="mhdr" style="border-radius:6px 6px 0 0"><div class="mhdr-co">Nueva oportunidad</div><button class="mclose" onclick="closeModal()">&times;</button></div>'
+    +'<div class="mbody"><div class="fgrid">'
+    +'<div class="fgrp"><div class="flbl">Empresa <span style="color:var(--fr)">*</span></div><input class="inp" id="nl-company" placeholder="Nombre de la empresa"></div>'
+    +'<div class="fgrp"><div class="flbl">Sector</div><input class="inp" id="nl-sector" placeholder="Ej: Metalurgia, Alimentaci&oacute;n&hellip;"></div>'
+    +'<div class="fgrp"><div class="flbl">Contacto</div><input class="inp" id="nl-contact" placeholder="Nombre &mdash; Cargo"></div>'
+    +'<div class="fgrp"><div class="flbl">Importe (&euro;)</div><input class="inp" id="nl-importe" type="number" placeholder="0"></div></div>'
+    +'<div class="fgrid" style="margin-top:8px">'
+    +'<div class="fgrp"><div class="flbl">Comercial asignado</div><select class="inp" id="nl-comercial">'+comOptions+'</select></div>'
+    +'<div class="fgrp"><div class="flbl">Concepto de ingreso</div><select class="inp" id="nl-concepto" onchange="nlConceptoChange()">'+concOptions+'</select></div>'
+    +'</div>'
+    +'<div id="nl-matriculas-wrap" style="display:none;margin-top:8px"><div class="fgrp"><div class="flbl">N&ordm; de matr&iacute;culas</div><input class="inp" id="nl-matriculas" type="number" min="1" placeholder="Ej: 10"></div></div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn btn-outline" onclick="closeModal()">Cancelar</button>'
+    +'<button class="btn btn-primary" onclick="confirmNewLead('+stageId+')">Crear oportunidad</button></div></div>';
+  showModal(html,true);
+}
+function nlConceptoChange(){
+  var sel=document.getElementById("nl-concepto");
+  var wrap=document.getElementById("nl-matriculas-wrap");
+  if(!sel||!wrap)return;
+  wrap.style.display=(conceptosConMatriculas.indexOf(sel.value)!==-1)?"block":"none";
+}
+function confirmNewLead(stageId){
+  var company=(document.getElementById("nl-company")||{}).value||"";
+  company=company.trim();
+  if(!company)return;
+  var sector=((document.getElementById("nl-sector")||{}).value||"").trim();
+  var contact=((document.getElementById("nl-contact")||{}).value||"").trim();
+  var importe=(document.getElementById("nl-importe")||{}).value||"";
+  var comercial=(document.getElementById("nl-comercial")||{}).value||comerciales[0];
+  var concepto=(document.getElementById("nl-concepto")||{}).value||null;
+  var matriculas=null;
+  if(concepto && conceptosConMatriculas.indexOf(concepto)!==-1){
+    var mval=(document.getElementById("nl-matriculas")||{}).value||"";
+    matriculas=mval?Number(mval):null;
+  }
+  var newLead = {id:nextId++,pipeline:activePipeline,company:company,sector:sector,stage:stageId,days:0,comercial:comercial,importe:importe?Number(importe):null,probCustom:null,concepto:concepto,matriculas:matriculas,contact:contact,lost:false,lostReason:"",obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad creada manualmente."}]};
+  leads.push(newLead);
+  closeModal();refresh();
+  setTimeout(function(){ checkAndTriggerAutomations(newLead); checkOverdueNotifications(); }, 150);
+}
+
+// ============================================================
+// EQUIPO MODAL
+// ============================================================
+function openEquipo(){ renderEquipoModal(); }
+function renderEquipoModal(){
+  var rows=comerciales.map(function(c,i){
+    return '<div class="eq-row" id="eq-row-'+i+'"><div class="eq-val" id="eq-val-'+i+'">'+esc(c)+'</div>'
+      +'<button class="btn btn-outline btn-sm" onclick="editEq('+i+')">&#9998; Editar</button>'
+      +'<button class="btn btn-lostout btn-sm" onclick="removeEq('+i+')">&#10005;</button></div>';
+  }).join("");
+  var html='<div class="mhdr" style="border-radius:6px 6px 0 0"><div class="mhdr-co">Gesti&oacute;n del equipo comercial</div><button class="mclose" onclick="closeModal()">&times;</button></div>'
+    +'<div class="mbody">'+rows
+    +'<div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--fl)">'
+    +'<input class="inp" id="eq-new" placeholder="Nombre del nuevo comercial" style="flex:1" onkeydown="if(event.key===\'Enter\')addEq()">'
+    +'<button class="btn btn-primary" onclick="addEq()">+ A&ntilde;adir</button></div></div>';
+  showModal(html,true);
+}
+function editEq(i){
+  var row=document.getElementById("eq-row-"+i);
+  if(!row)return;
+  var cur=comerciales[i];
+  row.innerHTML='<input class="eq-inp" id="eq-inp-'+i+'" value="'+esc(cur)+'" onblur="saveEq('+i+')" onkeydown="if(event.key===\'Enter\')saveEq('+i+')">'
+    +'<button class="btn btn-outline btn-sm" onclick="saveEq('+i+')">&#10003; OK</button>';
+  var inp=document.getElementById("eq-inp-"+i);
+  if(inp)inp.focus();
+}
+function saveEq(i){
+  var inp=document.getElementById("eq-inp-"+i);
+  if(inp&&inp.value.trim())comerciales[i]=inp.value.trim();
+  renderEquipoModal();
+}
+function removeEq(i){ comerciales.splice(i,1); renderEquipoModal(); }
+function addEq(){
+  var inp=document.getElementById("eq-new");
+  if(inp&&inp.value.trim()){comerciales.push(inp.value.trim());}
+  renderEquipoModal();
+}
+
+// ============================================================
+// PDF EXPORT
+// ============================================================
+function openExportModal(){
+  var html = '<div class="mhdr" style="border-radius:6px 6px 0 0">'
+    + '<div><div class="mhdr-co">&#8595; Configurar informe PDF</div>'
+    + '<div class="mhdr-sub">Selecciona las secciones que quieres incluir en el informe</div></div>'
+    + '<button class="mclose" onclick="closeModal()">&times;</button></div>'
+    + '<div class="mbody">'
+    + '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">';
+
+  var sections = [
+    {id:'sec-kpis',      label:'KPIs ejecutivos',             desc:'Resumen global: total pipeline, ponderado, probabilidad media, perdidas.',         checked:true},
+    {id:'sec-alerts',    label:'&#9888; Alertas activas',     desc:'Fichas con retraso, automatizaciones pendientes y empresas P2 sin formación.',      checked:true},
+    {id:'sec-funnel',    label:'Distribuci\u00f3n por etapas', desc:'Cu\u00e1ntas oportunidades e importe hay en cada etapa de cada pipeline.',          checked:true},
+    {id:'sec-opps',      label:'Oportunidades activas',       desc:'Tabla completa con etapa, comercial, importe y probabilidad.',                     checked:true},
+    {id:'sec-comercial', label:'Rendimiento por comercial',   desc:'Importe total y ponderado por cada miembro del equipo.',                           checked:true},
+    {id:'sec-activity',  label:'Actividad reciente',          desc:'Oportunidades creadas o avanzadas recientemente seg\u00fan sus observaciones.',     checked:false},
+    {id:'sec-lost',      label:'Oportunidades perdidas',      desc:'Tabla de perdidas con motivo. Incluye an\u00e1lisis de motivos m\u00e1s frecuentes.',checked:true},
+    {id:'sec-traceability',label:'Trazabilidad de observaciones',desc:'Historial completo de notas por oportunidad. Ideal para reuniones de seguimiento.',checked:false},
+  ];
+
+  sections.forEach(function(s){
+    html += '<label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--fb);border:1px solid var(--fl);border-radius:6px;cursor:pointer;">'
+      + '<input type="checkbox" id="'+s.id+'"'+(s.checked?' checked':'')+' style="margin-top:2px;accent-color:var(--fp);width:15px;height:15px;flex-shrink:0;">'
+      + '<div><div style="font-size:12px;font-weight:700;color:var(--fd);margin-bottom:1px;">'+s.label+'</div>'
+      + '<div style="font-size:10px;color:var(--fmu);">'+s.desc+'</div></div></label>';
+  });
+
+  html += '</div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--fl);">'
+    + '<button class="btn btn-outline" onclick="closeModal()">Cancelar</button>'
+    + '<button class="btn btn-danger" onclick="runExportPDF()">&#8595; Generar PDF</button>'
+    + '</div></div>';
+
+  showModal(html, true);
+}
+window.openExportModal = openExportModal;
+
+function getChecked(id){ var el=document.getElementById(id); return el&&el.checked; }
+
+function runExportPDF(){
+  var opts = {
+    kpis:         getChecked('sec-kpis'),
+    alerts:       getChecked('sec-alerts'),
+    funnel:       getChecked('sec-funnel'),
+    opps:         getChecked('sec-opps'),
+    comercial:    getChecked('sec-comercial'),
+    activity:     getChecked('sec-activity'),
+    lost:         getChecked('sec-lost'),
+    traceability: getChecked('sec-traceability'),
+  };
+  closeModal();
+  exportPDF(opts);
+}
+window.runExportPDF = runExportPDF;
+
+function exportPDF(opts){
+  if(!opts) opts={kpis:true,alerts:true,funnel:true,opps:true,comercial:true,activity:false,lost:true,traceability:false};
+  var active=leads.filter(function(l){return !l.lost;});
+  var lostAll=leads.filter(function(l){return l.lost;});
+  var eco=active.filter(function(l){return PIPELINES[l.pipeline].economic&&l.importe;});
+  var total=eco.reduce(function(s,l){return s+l.importe;},0);
+  var weighted=eco.reduce(function(s,l){var p=getProb(l);return s+(p!=null?l.importe*p/100:0);},0);
+  var lostTotal=lostAll.filter(function(l){return l.importe;}).reduce(function(s,l){return s+l.importe;},0);
+  var pm=total>0?Math.round(weighted/total*100):0;
+
+  var css = "body{font-family:Calibri,Arial,sans-serif;padding:28px;color:#040D17;font-size:12px;}"
+    +".hdr{background:#0C5580;color:#fff;padding:14px 22px;margin:-28px -28px 20px;border-bottom:3px solid #BC262E;display:flex;justify-content:space-between;align-items:center;}"
+    +".krow{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}"
+    +".kc{background:#EEF5F7;padding:8px 14px;border-radius:5px;min-width:100px;}"
+    +".kv{font-size:16px;font-weight:700;color:#0C5580;}.kl{font-size:9px;color:#757575;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}"
+    +"h2{color:#0C5580;font-size:13px;margin:18px 0 6px;padding-bottom:5px;border-bottom:2px solid #B0D1D7;}"
+    +"table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px;}"
+    +"th{background:#0C5580;color:#fff;padding:6px 8px;text-align:left;font-weight:600;}"
+    +"td{padding:5px 8px;border-bottom:1px solid #EEF5F7;vertical-align:top;}"
+    +"tr:nth-child(even) td{background:#F7FBFC;}"
+    +".alert-box{background:#FFF5F5;border:1px solid #F5C0C0;border-left:4px solid #BC262E;border-radius:5px;padding:8px 12px;margin-bottom:8px;font-size:11px;}"
+    +".alert-title{font-weight:700;color:#922B21;margin-bottom:2px;font-size:11px;}"
+    +".alert-body{color:#555;}"
+    +".obs-block{background:#F7FBFC;border-left:3px solid #0C5580;padding:6px 10px;margin-bottom:5px;border-radius:0 4px 4px 0;}"
+    +".obs-meta{font-size:9px;color:#757575;margin-bottom:2px;}"
+    +".obs-text{font-size:11px;color:#040D17;}"
+    +".obs-block.al{border-left-color:#BC262E;background:#FFF5F5;}"
+    +".obs-block.sy{border-left-color:#B0D1D7;background:#f9f9f9;}"
+    +".company-block{margin-bottom:16px;padding:12px 14px;border:1px solid #B0D1D7;border-radius:6px;break-inside:avoid;}"
+    +".company-title{font-size:13px;font-weight:700;color:#1F4E79;margin-bottom:6px;}"
+    +".company-meta{font-size:10px;color:#757575;margin-bottom:8px;}"
+    +".funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}"
+    +".funnel-bar-wrap{flex:1;background:#EEF5F7;border-radius:3px;height:8px;overflow:hidden;}"
+    +".funnel-bar{height:100%;background:#0C5580;border-radius:3px;}"
+    +".ft{color:#757575;font-size:9px;text-align:center;margin-top:20px;padding-top:10px;border-top:1px solid #B0D1D7;}";
+
+  var w = window.open("","_blank");
+  w.document.write("<!DOCTYPE html><html><head><meta charset='utf-8'><title>CRM FIN \u2014 Informe</title><style>"+css+"</style></head><body>");
+  w.document.write("<div class='hdr'><strong style='font-size:15px'>CRM Pipeline \u2014 Informe Ejecutivo</strong><span style='font-size:11px;color:#B0D1D7'>Fundaci\u00f3n Industrial Navarra \u00b7 "+new Date().toLocaleDateString("es-ES")+"</span></div>");
+
+  // KPIs
+  if(opts.kpis){
+    w.document.write("<h2>KPIs ejecutivos</h2><div class='krow'>"
+      +"<div class='kc'><div class='kv'>"+active.length+"</div><div class='kl'>Activas</div></div>"
+      +"<div class='kc'><div class='kv'>"+fmt(total)+"</div><div class='kl'>Total pipeline</div></div>"
+      +"<div class='kc'><div class='kv'>"+fmt(weighted)+"</div><div class='kl'>Ponderado</div></div>"
+      +"<div class='kc'><div class='kv'>"+pm+"%</div><div class='kl'>Prob. media</div></div>"
+      +"<div class='kc'><div class='kv'>"+lostAll.length+"</div><div class='kl'>Perdidas</div></div>"
+      +"<div class='kc'><div class='kv'>"+fmt(lostTotal)+"</div><div class='kl'>Importe perdido</div></div>"
+      +"</div>");
+  }
+
+  // ALERTS
+  if(opts.alerts){
+    var overdueLeads = active.filter(function(l){ return isOverdue(l); });
+    var p2NoP3 = active.filter(function(l){
+      if(l.pipeline!=="P2"||l.days<21)return false;
+      return !leads.find(function(x){return x.pipeline==="P3"&&x.company===l.company&&!x.lost;});
+    });
+    var pendingAuto = notifications.filter(function(n){ return n.type==="automation"&&!n.read; });
+    if(overdueLeads.length>0||p2NoP3.length>0||pendingAuto.length>0){
+      w.document.write("<h2>\u26a0 Alertas activas</h2>");
+      overdueLeads.forEach(function(l){
+        var st=PIPELINES[l.pipeline].stages[l.stage];
+        var maxD=getMaxDays(l.pipeline,l.stage);
+        w.document.write("<div class='alert-box'><div class='alert-title'>Retraso \u00b7 "+esc(l.pipeline)+" \u00b7 "+esc(l.company)+"</div>"
+          +"<div class='alert-body'>"+l.days+" d\u00edas en \""+esc(st?st.label:"")+"\" (m\u00e1x. "+maxD+"d) \u00b7 Comercial: "+esc(l.comercial)+"</div></div>");
+      });
+      p2NoP3.forEach(function(l){
+        w.document.write("<div class='alert-box'><div class='alert-title'>P2 sin P3 \u00b7 "+esc(l.company)+"</div>"
+          +"<div class='alert-body'>"+l.days+" d\u00edas en onboarding sin oportunidad de formaci\u00f3n activa \u00b7 Comercial: "+esc(l.comercial)+"</div></div>");
+      });
+      if(overdueLeads.length===0&&p2NoP3.length===0){
+        w.document.write("<p style='color:#757575;font-size:11px'>No hay alertas de retraso activas.</p>");
+      }
+    } else {
+      w.document.write("<h2>\u26a0 Alertas activas</h2><p style='color:#757575;font-size:11px'>\u2713 Sin alertas activas en este momento.</p>");
+    }
+  }
+
+  // FUNNEL BY STAGE
+  if(opts.funnel){
+    w.document.write("<h2>Distribuci\u00f3n por etapas</h2>");
+    Object.values(PIPELINES).forEach(function(p){
+      var pLeads=active.filter(function(l){return l.pipeline===p.id;});
+      if(pLeads.length===0)return;
+      var pTotal=p.economic?pLeads.reduce(function(s,l){return s+(l.importe||0);},0):null;
+      w.document.write("<div style='margin-bottom:12px'><div style='font-weight:700;font-size:12px;color:#0C5580;margin-bottom:5px'>"+p.id+" \u00b7 "+esc(p.label)+(pTotal!=null?" \u00b7 "+fmt(pTotal):"")+"</div>");
+      p.stages.forEach(function(stage){
+        var sl=pLeads.filter(function(l){return l.stage===stage.id;});
+        if(sl.length===0)return;
+        var stageImp=p.economic?sl.reduce(function(s,l){return s+(l.importe||0);},0):null;
+        var pct2=Math.round(sl.length/pLeads.length*100);
+        w.document.write("<div class='funnel-row'>"
+          +"<div style='width:160px;font-size:10px;color:#040D17'>"+(stage.id+1)+". "+esc(stage.label)+"</div>"
+          +"<div class='funnel-bar-wrap'><div class='funnel-bar' style='width:"+pct2+"%'></div></div>"
+          +"<div style='width:70px;font-size:10px;color:#0C5580;font-weight:700;text-align:right'>"+sl.length+" op."+(stageImp!=null?" / "+fmt(stageImp):"")+"</div>"
+          +"</div>");
+      });
+      w.document.write("</div>");
+    });
+  }
+
+  // ACTIVE OPPS TABLE
+  if(opts.opps){
+    var rows=active.map(function(l){
+      var p=PIPELINES[l.pipeline];var st=p.stages[l.stage];var prob=getProb(l);
+      var pond=p.economic&&l.importe&&prob!=null?l.importe*prob/100:null;
+      var overdue=isOverdue(l)?"style='color:#C0392B;font-weight:700'":"";
+      return "<tr><td>"+esc(l.company)+"</td><td>"+esc(p.label)+"</td><td>"+esc(st?st.label:"")+"</td>"
+        +"<td>"+esc(l.comercial)+"</td>"
+        +"<td style='text-align:right'>"+(p.economic?fmt(l.importe):"&mdash;")+"</td>"
+        +"<td style='text-align:right'>"+(prob!=null?prob+"%":"&mdash;")+"</td>"
+        +"<td style='text-align:right'>"+(pond!=null?fmt(pond):"&mdash;")+"</td>"
+        +"<td "+overdue+">"+l.days+"d"+(isOverdue(l)?" \u26a0":"")+"</td></tr>";
+    }).join("");
+    w.document.write("<h2>Oportunidades activas</h2><table><thead><tr><th>Empresa</th><th>Pipeline</th><th>Etapa</th><th>Comercial</th><th>Importe</th><th>Prob.</th><th>Ponderado</th><th>D\u00edas</th></tr></thead><tbody>"+rows+"</tbody></table>");
+  }
+
+  // COMERCIAL PERFORMANCE
+  if(opts.comercial){
+    var byC={};
+    active.forEach(function(l){
+      if(!byC[l.comercial])byC[l.comercial]={n:0,imp:0,pond:0,lost:0};
+      byC[l.comercial].n++;
+      var p=PIPELINES[l.pipeline];
+      if(p.economic&&l.importe){byC[l.comercial].imp+=l.importe;var pr=getProb(l);if(pr!=null)byC[l.comercial].pond+=l.importe*pr/100;}
+    });
+    lostAll.forEach(function(l){if(!byC[l.comercial])byC[l.comercial]={n:0,imp:0,pond:0,lost:0};byC[l.comercial].lost++;});
+    var cRows=Object.entries(byC).sort(function(a,b){return b[1].imp-a[1].imp;}).map(function(e){
+      var conv=e[1].imp>0?Math.round(e[1].pond/e[1].imp*100):0;
+      return "<tr><td>"+esc(e[0])+"</td><td style='text-align:center'>"+e[1].n+"</td><td style='text-align:right'>"+fmt(e[1].imp)+"</td><td style='text-align:right'>"+fmt(e[1].pond)+"</td><td style='text-align:center'>"+conv+"%</td><td style='text-align:center;color:#BC262E'>"+e[1].lost+"</td></tr>";
+    }).join("");
+    w.document.write("<h2>Rendimiento por comercial</h2><table><thead><tr><th>Comercial</th><th>Activas</th><th>Importe total</th><th>Ponderado</th><th>% Conversi\u00f3n</th><th>Perdidas</th></tr></thead><tbody>"+cRows+"</tbody></table>");
+  }
+
+  // RECENT ACTIVITY
+  if(opts.activity){
+    var recent = active.filter(function(l){
+      return l.obs && l.obs.some(function(o){ return o.type==="user"; });
+    }).slice(0,15);
+    if(recent.length>0){
+      var aRows=recent.map(function(l){
+        var lastObs=l.obs.filter(function(o){return o.type==="user";}).slice(-1)[0];
+        return "<tr><td>"+esc(l.company)+"</td><td>"+esc(PIPELINES[l.pipeline].label)+"</td><td>"+esc(l.comercial)+"</td>"
+          +"<td>"+esc(lastObs?lastObs.date:"")+"</td><td>"+esc(lastObs?lastObs.text:"")+"</td></tr>";
+      }).join("");
+      w.document.write("<h2>Actividad reciente</h2><table><thead><tr><th>Empresa</th><th>Pipeline</th><th>Comercial</th><th>Fecha</th><th>\u00daltima observaci\u00f3n</th></tr></thead><tbody>"+aRows+"</tbody></table>");
+    }
+  }
+
+  // LOST WITH ANALYSIS
+  if(opts.lost && lostAll.length>0){
+    var lostReasons={};
+    lostAll.forEach(function(l){var r=l.lostReason||"Sin especificar";if(!lostReasons[r])lostReasons[r]=0;lostReasons[r]++;});
+    var reasonsHtml=Object.entries(lostReasons).sort(function(a,b){return b[1]-a[1];}).map(function(e){
+      return "<tr><td>"+esc(e[0])+"</td><td style='text-align:center;font-weight:700;color:#BC262E'>"+e[1]+"</td></tr>";
+    }).join("");
+    var lostRows=lostAll.map(function(l){
+      return "<tr style='background:#FFF5F5'><td>"+esc(l.company)+"</td><td>"+esc(PIPELINES[l.pipeline].label)+"</td>"
+        +"<td>"+esc(l.comercial)+"</td><td style='text-align:right'>"+fmt(l.importe)+"</td><td>"+esc(l.lostReason||"&mdash;")+"</td></tr>";
+    }).join("");
+    w.document.write("<h2>Oportunidades perdidas</h2>"
+      +"<table><thead><tr><th>Motivo</th><th>Frecuencia</th></tr></thead><tbody>"+reasonsHtml+"</tbody></table>"
+      +"<table><thead><tr><th>Empresa</th><th>Pipeline</th><th>Comercial</th><th>Importe</th><th>Motivo</th></tr></thead><tbody>"+lostRows+"</tbody></table>");
+  }
+
+  // TRACEABILITY
+  if(opts.traceability){
+    w.document.write("<h2>Trazabilidad de observaciones</h2>");
+    active.forEach(function(l){
+      if(!l.obs||l.obs.length===0)return;
+      var p=PIPELINES[l.pipeline];var st=p.stages[l.stage];
+      var prob=getProb(l);
+      w.document.write("<div class='company-block'>"
+        +"<div class='company-title'>"+esc(l.company)+"</div>"
+        +"<div class='company-meta'>"+esc(p.label)+" \u00b7 Etapa: "+esc(st?st.label:"")+" \u00b7 Comercial: "+esc(l.comercial)
+        +(p.economic&&l.importe?" \u00b7 Importe: "+fmt(l.importe):"")
+        +(prob!=null?" \u00b7 Prob.: "+prob+"%":"")+"</div>");
+      l.obs.forEach(function(o){
+        var cls=o.type==="system"?"sy":o.type==="alert"?"al":"";
+        w.document.write("<div class='obs-block "+cls+"'>"
+          +"<div class='obs-meta'>"+esc(o.author)+" \u00b7 "+esc(o.date)+(o.type==="system"?" \u00b7 AUTO":o.type==="alert"?" \u00b7 ALERTA":"")+"</div>"
+          +"<div class='obs-text'>"+esc(o.text)+"</div></div>");
+      });
+      w.document.write("</div>");
+    });
+  }
+
+  w.document.write("<div class='ft'>Fundaci\u00f3n Industrial Navarra \u00b7 fundacionindustrialnavarra.com \u00b7 "+new Date().toLocaleDateString("es-ES")+"</div>");
+  w.document.write("<scr"+"ipt>window.onload=function(){window.print()};<\/scr"+"ipt></body></html>");
+  w.document.close();
+}
+
+
+function setView(v){
+  currentView=v;
+  document.getElementById("btn-kanban").className="btn btn-ghost"+(v==="kanban"?" active":"");
+  document.getElementById("btn-dashboard").className="btn btn-ghost"+(v==="dashboard"?" active":"");
+  var cfgBtn=document.getElementById("btn-config");
+  if(cfgBtn)cfgBtn.className="btn btn-ghost"+(v==="config"?" active":"");
+  var helpBtn=document.getElementById("btn-help");
+  if(helpBtn)helpBtn.className="btn btn-ghost"+(v==="help"?" active":"");
+  var notifBtn=document.getElementById("btn-notif");
+  if(notifBtn){
+    var unread=notifications.filter(function(n){return !n.read;}).length;
+    notifBtn.className="btn btn-ghost"+(v==="notif"?" active":"")+(unread>0?" notif-active":"");
+  }
+  renderMain();
+}
+function setPipeline(id){ activePipeline=id; renderNav(); renderMain(); }
+function renderMain(){ if(currentView==="kanban")renderKanban();else if(currentView==="dashboard")renderDashboard();else if(currentView==="config")renderConfig();else if(currentView==="notif")renderNotifications();else renderHelp(); }
+function refresh(){ renderKPIs(); renderNav(); renderMain(); checkOverdueNotifications(); }
+
+
+
+// ============================================================
+// PIPELINE AUTOMATIONS
+// ============================================================
+function checkAndTriggerAutomations(lead) {
+  var pipeline = PIPELINES[lead.pipeline];
+  var stage = pipeline.stages[lead.stage];
+  if(!stage) return;
+
+  // P1 -> P2: When reaching last stage (Asociada)
+  if(lead.pipeline === "P1" && lead.stage === pipeline.stages.length - 1) {
+    var alreadyInP2 = leads.find(function(l){ return l.pipeline==="P2" && l.company===lead.company && !l.lost; });
+    if(!alreadyInP2) {
+      leads.push({
+        id: nextId++, pipeline:"P2", company:lead.company, sector:lead.sector,
+        stage:0, days:0, comercial:lead.comercial, importe:null, probCustom:null,
+        contact:lead.contact, lost:false, lostReason:"",
+        obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Ficha creada automáticamente al cerrar P1 como Asociada. Inicio del proceso de onboarding."}]
+      });
+      showAutomationAlert("P1 → P2", lead.company + " ha sido añadida automáticamente al pipeline de Onboarding (P2) en la primera etapa.");
+    }
+  }
+
+  // P2 paso 3 (Mesas activadas) -> suggest P4
+  if(lead.pipeline === "P2" && lead.stage === 3) {
+    var alreadyInP4 = leads.find(function(l){ return l.pipeline==="P4" && l.company===lead.company && !l.lost; });
+    if(!alreadyInP4) {
+      showAutomationConfirm(
+        "P2 → P4",
+        lead.company + " ha activado Mesas (P2 paso 3). ¿Deseas abrir una oportunidad de Captación FIINCA (P4) para esta empresa?",
+        function() {
+          leads.push({
+            id: nextId++, pipeline:"P4", company:lead.company, sector:lead.sector,
+            stage:0, days:0, comercial:lead.comercial, importe:3200, probCustom:null,
+            contact:lead.contact, lost:false, lostReason:"",
+            obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad P4 abierta automáticamente desde P2 paso 3 (Mesas activadas)."}]
+          });
+          refresh();
+        }
+      );
+    }
+  }
+
+  // P3 empresa no asociada -> suggest P1
+  if(lead.pipeline === "P3") {
+    var inP1 = leads.find(function(l){ return l.pipeline==="P1" && l.company===lead.company && !l.lost; });
+    var closedP1 = leads.find(function(l){ return l.pipeline==="P1" && l.company===lead.company && l.stage===6; });
+    if(!inP1 && !closedP1) {
+      showAutomationConfirm(
+        "P3 → P1",
+        lead.company + " está en Venta Formación (P3) pero no está en el pipeline de Captación Asociada. ¿Deseas abrir una oportunidad en P1?",
+        function() {
+          leads.push({
+            id: nextId++, pipeline:"P1", company:lead.company, sector:lead.sector,
+            stage:0, days:0, comercial:lead.comercial, importe:4800, probCustom:null,
+            contact:lead.contact, lost:false, lostReason:"",
+            obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad P1 sugerida automáticamente desde P3. Empresa activa en formación sin ser asociada."}]
+          });
+          refresh();
+        }
+      );
+    }
+  }
+}
+
+function showAutomationAlert(title, msg, pipeline, company) {
+  addNotif('automation', 'Automatización: ' + title, msg, pipeline, company, null);
+  var html = '<div class="mhdr" style="border-radius:6px 6px 0 0"><div><div class="mhdr-co">&#9881; Automatización: '+esc(title)+'</div></div><button class="mclose" onclick="closeModal()">×</button></div>'
+    +'<div class="mbody"><div style="background:#EEF5F7;border-left:3px solid var(--fp);padding:10px 14px;border-radius:0 5px 5px 0;margin-bottom:14px;font-size:13px;">'+esc(msg)+'</div>'
+    +'<div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="closeModal();refresh()">Entendido</button></div></div>';
+  showModal(html, true);
+}
+
+function showAutomationConfirm(title, msg, onConfirm, pipeline, company) {
+  addNotif('automation', 'Sugerencia de automatización: ' + title, msg, pipeline||null, company||null, null);
+  window._autoConfirmFn = onConfirm;
+  var html = '<div class="mhdr" style="border-radius:6px 6px 0 0"><div><div class="mhdr-co">&#9881; Automatización: '+esc(title)+'</div></div><button class="mclose" onclick="closeModal()">×</button></div>'
+    +'<div class="mbody"><div style="background:#EEF5F7;border-left:3px solid var(--fp);padding:10px 14px;border-radius:0 5px 5px 0;margin-bottom:14px;font-size:13px;">'+esc(msg)+'</div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button class="btn btn-outline" onclick="closeModal()">No por ahora</button>'
+    +'<button class="btn btn-primary" onclick="closeModal();window._autoConfirmFn&&window._autoConfirmFn()">Sí, abrir oportunidad</button>'
+    +'</div></div>';
+  showModal(html, true);
+}
+window.showAutomationAlert = showAutomationAlert;
+window.showAutomationConfirm = showAutomationConfirm;
+
+
+function renderConfig() {
+  var html = '';
+
+  // Automation rules section
+  html += '<div class="config-section"><div class="config-section-title">&#9881; Automatizaciones entre pipelines</div>';
+  var rules = [
+    {icon:"&#8594;", from:"P1", to:"P2", title:"P1 Captación Asociada → P2 Onboarding",
+     desc:"Cuando una empresa alcanza la etapa <strong>Asociada ✓</strong> en P1, se crea automáticamente una ficha en P2 (Onboarding) en la primera etapa. Sin intervención manual."},
+    {icon:"&#8594;", from:"P2", to:"P4", title:"P2 Onboarding → P4 Captación FIINCA",
+     desc:"Cuando una empresa llega al paso 3 de P2 (<strong>Mesas activadas</strong>), el sistema sugiere abrir una oportunidad en P4. El comercial puede confirmar o ignorar la sugerencia."},
+    {icon:"&#8594;", from:"P3", to:"P1", title:"P3 Venta Formación → P1 Captación Asociada",
+     desc:"Cuando se crea o avanza una oportunidad en P3 y la empresa <strong>no está en P1</strong>, el sistema sugiere abrir una oportunidad de captación como asociada."},
+    {icon:"&#9888;", from:"P2", to:"P3", title:"P2 Alerta sin Formación (día 21+)",
+     desc:"Si una empresa lleva más de 21 días en P2 sin tener ninguna oportunidad activa en P3, su tarjeta se marca en rojo como alerta para el comercial responsable."},
+  ];
+  rules.forEach(function(r){
+    html += '<div class="auto-rule"><div class="auto-rule-icon">'+r.icon+'</div><div><div class="auto-rule-title"><span class="auto-badge '+r.from.toLowerCase()+'">'+r.from+'</span><span style="color:var(--fmu)">→</span><span class="auto-badge '+r.to.toLowerCase()+'">'+r.to+'</span> '+esc(r.title)+'</div><div class="auto-rule-desc">'+r.desc+'</div></div></div>';
+  });
+  html += '</div>';
+
+  // ---- SECTION: EDIT PIPELINES (stages count + names) ----
+  html += '<div class="config-section"><div class="config-section-title">&#128257; Edici&oacute;n de embudos (etapas y nombres)</div>';
+  html += '<div style="font-size:11px;color:var(--fmu);margin-bottom:12px">Puedes renombrar etapas y a&ntilde;adir o eliminar etapas en cada embudo. Los cambios afectan al Kanban y a las fichas en tiempo real.</div>';
+  Object.values(PIPELINES).forEach(function(p){
+    html += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--fn);margin-bottom:8px;display:flex;align-items:center;gap:8px">'
+      +'<span style="background:var(--fp);color:#fff;border-radius:4px;padding:2px 8px;font-size:11px">'+p.id+'</span>'
+      +esc(p.label)+'</div>';
+    html += '<div id="stages-list-'+p.id+'">';
+    p.stages.forEach(function(stage,idx){
+      html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:5px" id="stage-row-'+p.id+'-'+idx+'">'
+        +'<span style="background:var(--fp);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">'+(idx+1)+'</span>'
+        +'<input class="inp" style="flex:1" value="'+esc(stage.label)+'" onchange="renameStage(\''+p.id+'\','+idx+',this.value)" placeholder="Nombre de etapa">'
+        +(p.stages.length>1?'<button class="btn btn-lostout btn-sm" onclick="removeStage(\''+p.id+'\','+idx+')" title="Eliminar etapa">&#10005;</button>':"")
+        +'</div>';
+    });
+    html += '</div>';
+    html += '<button class="btn btn-outline btn-sm" style="margin-top:4px" onclick="addStage(\''+p.id+'\')">+ A&ntilde;adir etapa</button>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // ---- SECTION: PROBABILITY PER STAGE PER PIPELINE ----
+  html += '<div class="config-section"><div class="config-section-title">&#127919; Probabilidades de &eacute;xito por fase y embudo</div>';
+  html += '<div style="font-size:11px;color:var(--fmu);margin-bottom:12px">Define el % de probabilidad est&aacute;ndar de cada etapa en los embudos econ&oacute;micos. Cada ficha usa esta probabilidad salvo que el comercial la personalice.</div>';
+  Object.values(PIPELINES).filter(function(p){return p.economic;}).forEach(function(p){
+    html += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;color:var(--fn);margin-bottom:8px;display:flex;align-items:center;gap:8px">'
+      +'<span style="background:var(--fp);color:#fff;border-radius:4px;padding:2px 8px;font-size:11px">'+p.id+'</span>'
+      +esc(p.label)+'</div>';
+    html += '<table class="config-table"><thead><tr><th>Etapa</th><th>Nombre</th><th style="text-align:center">Probabilidad (%)</th></tr></thead><tbody>';
+    p.stages.forEach(function(stage){
+      if(stage.prob===null) return;
+      html += '<tr><td><span style="background:var(--fp);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">'+(stage.id+1)+'</span></td>';
+      html += '<td>'+esc(stage.label)+'</td>';
+      html += '<td style="text-align:center"><input class="days-inp" type="number" min="0" max="100" value="'+stage.prob+'" onchange="setStageProbability(\''+p.id+'\','+stage.id+',this.value)"></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  html += '</div>';
+
+  // ---- SECTION: INCOME CONCEPTS MANAGEMENT ----
+  html += '<div class="config-section"><div class="config-section-title">&#127991; Conceptos de ingreso</div>';
+  html += '<div style="font-size:11px;color:var(--fmu);margin-bottom:12px">Gestiona los conceptos de ingreso disponibles en las fichas. Los marcados con &#127891; habilitan el campo de matr&iacute;culas.</div>';
+  html += '<div id="conceptos-list">';
+  conceptosIngreso.forEach(function(c,i){
+    var hasMat=conceptosConMatriculas.indexOf(c)!==-1;
+    html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px" id="concepto-row-'+i+'">'
+      +'<input class="inp" style="flex:1" value="'+esc(c)+'" onchange="renameConcepto('+i+',this.value)">'
+      +'<label style="display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap;cursor:pointer">'
+      +'<input type="checkbox" '+(hasMat?"checked":"")+ ' onchange="toggleConceptoMat('+i+',this.checked)" style="accent-color:var(--fp)"> &#127891; Matr&iacute;culas</label>'
+      +'<button class="btn btn-lostout btn-sm" onclick="removeConcepto('+i+')" title="Eliminar">&#10005;</button>'
+      +'</div>';
+  });
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--fl)">'
+    +'<input class="inp" id="new-concepto-inp" placeholder="Nuevo concepto de ingreso" style="flex:1" onkeydown="if(event.key===\'Enter\')addConcepto()">'
+    +'<label style="display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap;cursor:pointer">'
+    +'<input type="checkbox" id="new-concepto-mat" style="accent-color:var(--fp)"> &#127891; Matr&iacute;culas</label>'
+    +'<button class="btn btn-primary" onclick="addConcepto()">+ A&ntilde;adir</button></div>';
+  html += '</div>';
+
+  // Days config per pipeline
+  Object.values(PIPELINES).forEach(function(p){
+    html += '<div class="config-section"><div class="config-section-title">'+p.id+' &middot; '+esc(p.label)+' &mdash; D&iacute;as m&aacute;ximos por etapa</div>';
+    html += '<table class="config-table"><thead><tr><th>Etapa</th><th>Nombre</th><th style="text-align:center">D&iacute;as m&aacute;ximos</th><th style="text-align:center">Acci&oacute;n al superar</th></tr></thead><tbody>';
+    p.stages.forEach(function(stage){
+      var maxD = getMaxDays(p.id, stage.id);
+      html += '<tr><td><span style="background:var(--fp);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">'+(stage.id+1)+'</span></td>';
+      html += '<td>'+esc(stage.label)+'</td>';
+      html += '<td style="text-align:center"><input class="days-inp" type="number" min="1" max="365" value="'+maxD+'" onchange="setMaxDays(\''+p.id+'\','+stage.id+',this.value)" title="D\u00edas m\u00e1ximos en esta etapa"></td>';
+      html += '<td style="text-align:center;font-size:10px;color:var(--fr);">&#9888; Tarjeta en rojo</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+
+  document.getElementById("main-content").innerHTML = html;
+}
+
+// ---- Pipeline stage editing functions ----
+function renameStage(pid, idx, val){
+  if(PIPELINES[pid]&&PIPELINES[pid].stages[idx]) PIPELINES[pid].stages[idx].label=val.trim()||PIPELINES[pid].stages[idx].label;
+}
+function removeStage(pid, idx){
+  var p=PIPELINES[pid]; if(!p||p.stages.length<=1)return;
+  p.stages.splice(idx,1);
+  // Re-index ids
+  p.stages.forEach(function(s,i){s.id=i;});
+  // Clamp leads stage
+  leads.forEach(function(l){if(l.pipeline===pid&&l.stage>=p.stages.length)l.stage=p.stages.length-1;});
+  renderConfig();
+}
+function addStage(pid){
+  var p=PIPELINES[pid]; if(!p)return;
+  var lastProb=p.stages.length>0?p.stages[p.stages.length-1].prob:null;
+  var newId=p.stages.length;
+  var newLabel="Nueva etapa "+(newId+1);
+  p.stages.push({id:newId,label:newLabel,short:newLabel,prob:p.economic?lastProb:null});
+  if(!stageConfig[pid]) stageConfig[pid]=[];
+  stageConfig[pid][newId]=14;
+  renderConfig();
+}
+window.renameStage=renameStage;
+window.removeStage=removeStage;
+window.addStage=addStage;
+
+// ---- Stage probability functions ----
+function setStageProbability(pid, stageId, val){
+  if(PIPELINES[pid]&&PIPELINES[pid].stages[stageId]!=null)
+    PIPELINES[pid].stages[stageId].prob=Math.min(100,Math.max(0,Number(val)||0));
+  renderKPIs();
+}
+window.setStageProbability=setStageProbability;
+
+// ---- Income concept management functions ----
+function renameConcepto(idx,val){
+  var old=conceptosIngreso[idx];
+  var newVal=val.trim();
+  if(!newVal)return;
+  conceptosIngreso[idx]=newVal;
+  // Update leads
+  leads.forEach(function(l){if(l.concepto===old)l.concepto=newVal;});
+  // Update conceptosConMatriculas
+  var mi=conceptosConMatriculas.indexOf(old);
+  if(mi!==-1) conceptosConMatriculas[mi]=newVal;
+}
+function toggleConceptoMat(idx,checked){
+  var c=conceptosIngreso[idx];
+  var mi=conceptosConMatriculas.indexOf(c);
+  if(checked&&mi===-1) conceptosConMatriculas.push(c);
+  if(!checked&&mi!==-1) conceptosConMatriculas.splice(mi,1);
+}
+function removeConcepto(idx){
+  var c=conceptosIngreso[idx];
+  conceptosIngreso.splice(idx,1);
+  var mi=conceptosConMatriculas.indexOf(c);
+  if(mi!==-1) conceptosConMatriculas.splice(mi,1);
+  renderConfig();
+}
+function addConcepto(){
+  var inp=document.getElementById("new-concepto-inp");
+  var chk=document.getElementById("new-concepto-mat");
+  if(!inp||!inp.value.trim())return;
+  var newC=inp.value.trim();
+  if(conceptosIngreso.indexOf(newC)===-1){
+    conceptosIngreso.push(newC);
+    if(chk&&chk.checked) conceptosConMatriculas.push(newC);
+  }
+  renderConfig();
+}
+window.renameConcepto=renameConcepto;
+window.toggleConceptoMat=toggleConceptoMat;
+window.removeConcepto=removeConcepto;
+window.addConcepto=addConcepto;
+
+function setMaxDays(pipelineId, stageId, val) {
+  if(!stageConfig[pipelineId]) stageConfig[pipelineId] = [];
+  stageConfig[pipelineId][stageId] = Number(val) || 14;
+  // Re-render kanban if currently viewing it to update colors
+}
+window.setMaxDays = setMaxDays;
+window.renderConfig = renderConfig;
+
+
+function renderNotifications() {
+  checkOverdueNotifications();
+
+  var html = '<div class="notif-header"><div class="notif-header-title">&#128276; Buzón de avisos</div>';
+  html += '<div class="notif-header-actions">';
+  if(notifications.length > 0) {
+    html += '<button class="btn btn-outline btn-sm" onclick="markAllRead()">&#10003; Marcar todo leído</button>';
+    html += '<button class="btn btn-lostout btn-sm" onclick="clearAllNotifs()">&#128465; Limpiar todo</button>';
+  }
+  html += '</div></div>';
+
+  if(notifications.length === 0) {
+    html += '<div class="notif-empty"><div class="notif-empty-icon">&#128276;</div><div class="notif-empty-text">No hay avisos pendientes.<br>Todo está bajo control.</div></div>';
+  } else {
+    var icons = {overdue:"&#9888;", automation:"&#9881;", alert:"&#128680;"};
+    var typeLabels = {overdue:"Retraso", automation:"Automatización", alert:"Alerta"};
+    notifications.forEach(function(n){
+      var icon = icons[n.type] || "&#8226;";
+      var isRead = n.read;
+      // Clean body: remove the key marker used for deduplication
+      var body = n.body.replace(/\[[^\]]+\]\s*/,'');
+      html += '<div class="notif-item '+n.type+(isRead?" read":" unread")+'">';
+      html += '<div class="notif-icon">'+icon+'</div>';
+      html += '<div class="notif-content">';
+      html += '<div class="notif-title">';
+      if(!isRead) html += '<span class="notif-unread-dot"></span>';
+      html += esc(n.title) + '</div>';
+      html += '<div class="notif-body">'+esc(body)+'</div>';
+      html += '<div class="notif-meta">';
+      html += '<span>'+n.date+'</span>';
+      if(n.pipeline) html += '<span class="notif-pip-badge">'+esc(n.pipeline)+'</span>';
+      if(n.company) html += '<span style="font-size:10px;color:var(--fmu)">'+esc(n.company)+'</span>';
+      html += '</div></div>';
+      html += '<button class="notif-clear-btn" onclick="clearNotif('+n.id+')" title="Eliminar aviso">&#10005;</button>';
+      html += '</div>';
+      n.read = true; // Mark as read when viewed
+    });
+  }
+
+  document.getElementById("main-content").innerHTML = html;
+  updateNotifBadge();
+}
+window.renderNotifications = renderNotifications;
+window.renderHelp = renderHelp;
+
+
+function renderHelp() {
+  var html = '<div class="help-wrap">';
+
+  // Hero
+  html += '<div class="help-hero">'
+    + '<div class="help-hero-icon">&#128218;</div>'
+    + '<div><div class="help-hero-title">Gu\u00eda de uso del CRM Pipeline FIN</div>'
+    + '<div class="help-hero-sub">Este sistema gestiona el ciclo comercial completo de la Fundaci\u00f3n Industrial Navarra: captaci\u00f3n de empresas asociadas, onboarding, venta de formaci\u00f3n y captaci\u00f3n FIINCA. Cada ficha representa una empresa en un punto concreto del proceso comercial.</div>'
+    + '</div></div>';
+
+  // PIPELINES
+  html += '<div class="help-section"><div class="help-section-title"><span class="help-section-icon">&#128257;</span> Los cuatro pipelines</div>';
+  html += '<div class="help-grid">';
+  html += '<div class="help-card"><div class="help-card-title"><span class="help-card-badge p1">P1</span> Captaci\u00f3n Asociada</div><div class="help-card-text">Pipeline econ\u00f3mico. Gestiona el proceso desde que se identifica una empresa candidata hasta que se convierte en asociada de FIN. 7 etapas: Prospecto \u2192 Cualificada \u2192 Reuni\u00f3n \u2192 Interesada \u2192 Documentaci\u00f3n \u2192 Tramitaci\u00f3n \u2192 Asociada \u2713. Al cerrar como Asociada, se abre autom\u00e1ticamente en P2.</div></div>';
+  html += '<div class="help-card"><div class="help-card-title"><span class="help-card-badge p2">P2</span> Onboarding</div><div class="help-card-text">Pipeline de actividad (sin importe econ\u00f3mico). Gestiona la integraci\u00f3n de la nueva asociada en el ecosistema FIN. 6 etapas: Alta \u2192 Programado \u2192 Realizado \u2192 Mesas activadas \u2192 Contacto formaci\u00f3n \u2192 Activa \u2713. Al llegar a Mesas activadas, sugiere abrir P4.</div></div>';
+  html += '<div class="help-card"><div class="help-card-title"><span class="help-card-badge p3">P3</span> Venta Formaci\u00f3n</div><div class="help-card-text">Pipeline econ\u00f3mico. Gestiona la venta de cursos y programas formativos. 6 etapas: Lead \u2192 Cualificado \u2192 Propuesta \u2192 Negociaci\u00f3n \u2192 Comprometido \u2192 Matr\u00edcula \u2713. Si la empresa no est\u00e1 en P1, el sistema sugiere iniciar captaci\u00f3n como asociada.</div></div>';
+  html += '<div class="help-card"><div class="help-card-title"><span class="help-card-badge p4">P4</span> Captaci\u00f3n FIINCA</div><div class="help-card-text">Pipeline econ\u00f3mico. Gestiona la captaci\u00f3n de directivos para la red FIINCA. 6 etapas: Identificado \u2192 Reuni\u00f3n \u2192 Propuesta \u2192 Valoraci\u00f3n \u2192 Comprometido \u2192 Activo \u2713. Se inicia normalmente desde el paso 3 del onboarding (P2).</div></div>';
+  html += '</div></div>';
+
+  // USO DEL KANBAN
+  html += '<div class="help-section"><div class="help-section-title"><span class="help-section-icon">&#128203;</span> C\u00f3mo usar el Kanban</div>';
+  html += '<div class="help-steps">';
+  html += '<div class="help-step"><div class="help-step-num">1</div><div class="help-step-content"><div class="help-step-title">Selecciona el pipeline</div><div class="help-step-text">Usa los botones P1, P2, P3 y P4 bajo el header para cambiar entre pipelines. Cada pipeline tiene sus propias columnas y fichas.</div></div></div>';
+  html += '<div class="help-step"><div class="help-step-num">2</div><div class="help-step-content"><div class="help-step-title">Arrastra fichas entre etapas (Drag & Drop)</div><div class="help-step-text">Haz clic en una tarjeta, mant\u00e9n pulsado y arr\u00e1strala a otra columna. Al soltar, la ficha cambia de etapa y se comprueban autom\u00e1ticamente las reglas de automatizaci\u00f3n. Tambi\u00e9n puedes arrastrarla a la columna \u274c Perdidas.</div></div></div>';
+  html += '<div class="help-step"><div class="help-step-num">3</div><div class="help-step-content"><div class="help-step-title">Abre una ficha para ver el detalle</div><div class="help-step-text">Haz clic en cualquier tarjeta para abrir su ficha completa. Desde ah\u00ed puedes editar el comercial, el importe, la probabilidad, a\u00f1adir observaciones y avanzar la etapa.</div></div></div>';
+  html += '<div class="help-step"><div class="help-step-num">4</div><div class="help-step-content"><div class="help-step-title">Crea una nueva oportunidad</div><div class="help-step-text">Pulsa el bot\u00f3n \u201c+\u201d en la parte inferior de cualquier columna. Se abrir\u00e1 un formulario para introducir empresa, sector, contacto, importe y comercial. Al crear la ficha se comprueban autom\u00e1ticamente las reglas de automatizaci\u00f3n.</div></div></div>';
+  html += '<div class="help-step"><div class="help-step-num">5</div><div class="help-step-content"><div class="help-step-title">Marca una oportunidad como perdida</div><div class="help-step-text">Desde la ficha, pulsa \u201c\u2715 Marcar como perdida\u201d o arr\u00e1strala a la columna \u274c Perdidas. El sistema pedir\u00e1 el motivo. Las oportunidades perdidas se acumulan en esa columna y se pueden recuperar en cualquier momento.</div></div></div>';
+  html += '</div>';
+  html += '<div class="help-tip"><span class="help-tip-icon">&#128161;</span><span>Las tarjetas en <strong>naranja</strong> indican que la empresa lleva m\u00e1s d\u00edas de los configurados en esa etapa. Las tarjetas con porcentaje marcado en <strong style="color:var(--fr)">rojo con *</strong> tienen probabilidad personalizada por el comercial (distinta a la est\u00e1ndar de la etapa).</span></div>';
+  html += '</div>';
+
+  // AUTOMATIZACIONES
+  html += '<div class="help-section"><div class="help-section-title"><span class="help-section-icon">&#9881;</span> Automatizaciones entre pipelines</div>';
+  var autoRules = [
+    {from:'P1', fromC:'p1', to:'P2', toC:'p2',
+     title:'Captaci\u00f3n Asociada \u2192 Onboarding',
+     text:'Cuando una empresa alcanza la etapa final <strong>Asociada \u2713</strong> en P1, el sistema crea <strong>autom\u00e1ticamente</strong> una ficha en P2 (Onboarding) en la primera etapa. No requiere ninguna acci\u00f3n manual. Se genera un aviso en el buz\u00f3n confirmando la creaci\u00f3n.',
+     trigger:'Autom\u00e1tica \u2014 sin intervenci\u00f3n'},
+    {from:'P2', fromC:'p2', to:'P4', toC:'p4',
+     title:'Onboarding \u2192 Captaci\u00f3n FIINCA',
+     text:'Cuando una empresa llega al paso 3 de P2 (<strong>Mesas activadas</strong>), el sistema sugiere abrir una oportunidad de captaci\u00f3n FIINCA en P4. El comercial puede confirmar o ignorar la sugerencia.',
+     trigger:'Sugerida \u2014 requiere confirmaci\u00f3n'},
+    {from:'P3', fromC:'p3', to:'P1', toC:'p1',
+     title:'Venta Formaci\u00f3n \u2192 Captaci\u00f3n Asociada',
+     text:'Cuando se crea o avanza una oportunidad en P3 y la empresa <strong>no tiene ficha activa en P1</strong>, el sistema sugiere iniciar el proceso de captaci\u00f3n como asociada. Una empresa que compra formaci\u00f3n es un candidato natural a asociarse.',
+     trigger:'Sugerida \u2014 requiere confirmaci\u00f3n'},
+    {from:'P2', fromC:'p2', to:'P3', toC:'p3',
+     title:'Alerta: Onboarding sin Formaci\u00f3n (d\u00eda 21)',
+     text:'Si una empresa lleva <strong>21 d\u00edas o m\u00e1s</strong> en P2 sin tener ninguna oportunidad activa en P3, el sistema genera una alerta en el buz\u00f3n de avisos. El comercial deber\u00eda iniciar una conversaci\u00f3n sobre formaci\u00f3n.',
+     trigger:'Autom\u00e1tica \u2014 aviso en buz\u00f3n'},
+  ];
+  autoRules.forEach(function(r){
+    html += '<div class="help-auto-row">';
+    html += '<div class="help-auto-arrow"><span class="help-auto-from help-card-badge '+r.fromC+'">'+r.from+'</span><span class="help-auto-sep">\u2192</span><span class="help-auto-to help-card-badge '+r.toC+'">'+r.to+'</span></div>';
+    html += '<div class="help-auto-content"><div class="help-auto-title">'+r.title+'</div><div class="help-auto-text">'+r.text+'</div><span class="help-auto-trigger">'+r.trigger+'</span></div>';
+    html += '</div>';
+  });
+  html += '<div class="help-tip"><span class="help-tip-icon">&#128161;</span><span>Las automatizaciones se comprueban al <strong>avanzar una etapa</strong>, al <strong>arrastrar una ficha</strong>, al <strong>crear una oportunidad nueva</strong> y al <strong>recuperar una ficha perdida</strong>. Las alertas de retraso y P2\u2192P3 se comprueban en cada refresco de la aplicaci\u00f3n.</span></div>';
+  html += '</div>';
+
+  // DASHBOARD Y KPIS
+  html += '<div class="help-section"><div class="help-section-title"><span class="help-section-icon">&#128200;</span> Dashboard y KPIs</div>';
+  html += '<div class="help-kpi-row">';
+  var kpis = [
+    {l:'Total pipeline', d:'Suma de los importes de todas las oportunidades activas en pipelines econ\u00f3micos (P1, P3, P4).'},
+    {l:'Importe ponderado', d:'Cada importe multiplicado por su probabilidad de \u00e9xito. Refleja el valor realista del pipeline.'},
+    {l:'Probabilidad media', d:'Importe ponderado dividido entre importe total. Indica la salud global del pipeline.'},
+    {l:'Perdidas', d:'N\u00famero de oportunidades marcadas como perdidas. El importe perdido muestra el valor que no se ha convertido.'},
+  ];
+  kpis.forEach(function(k){
+    html += '<div class="help-kpi-chip"><div class="help-kpi-label">'+k.l+'</div><div class="help-kpi-desc">'+k.d+'</div></div>';
+  });
+  html += '</div>';
+  html += '<div class="help-step" style="margin-bottom:8px"><div class="help-step-content"><div class="help-step-text">El <strong>Dashboard</strong> muestra adem\u00e1s barras comparativas de importe ponderado vs. total por pipeline, y el rendimiento de cada comercial con su pipeline de valor y ponderado.</div></div></div>';
+  html += '</div>';
+
+  // BUZÓN DE AVISOS
+  html += '<div class="help-section"><div class="help-section-title"><span class="help-section-icon">&#128276;</span> Buz\u00f3n de avisos</div>';
+  html += '<div class="help-steps">';
+  html += '<div class="help-step"><div class="help-step-num" style="background:var(--fr)">!</div><div class="help-step-content"><div class="help-step-title">Retrasos en etapa <span style="color:var(--fr)">(borde rojo)</span></div><div class="help-step-text">Cuando una ficha supera los d\u00edas m\u00e1ximos configurados para su etapa, aparece un aviso con el pipeline, empresa, etapa, d\u00edas transcurridos y comercial responsable. La tarjeta en el Kanban tambi\u00e9n se resalta en naranja.</div></div></div>';
+  html += '<div class="help-step"><div class="help-step-num" style="background:#2E75B6">A</div><div class="help-step-content"><div class="help-step-title">Automatizaciones <span style="color:#2E75B6">(borde azul)</span></div><div class="help-step-text">Registro de cada automatizaci\u00f3n ejecutada o sugerida: creaciones autom\u00e1ticas de fichas entre pipelines y sugerencias de apertura confirmadas o pendientes.</div></div></div>';
+  html += '<div class="help-step"><div class="help-step-num" style="background:#E67E22">&#9888;</div><div class="help-step-content"><div class="help-step-title">Alertas de actividad <span style="color:#E67E22">(borde naranja)</span></div><div class="help-step-text">Avisos de situaciones que requieren atenci\u00f3n: empresas en onboarding sin formaci\u00f3n tras 21 d\u00edas, entre otros. El n\u00famero rojo sobre el bot\u00f3n \ud83d\udd14 Avisos indica cu\u00e1ntos avisos hay sin leer.</div></div></div>';
+  html += '</div></div>';
+
+  // CONFIGURACIÓN
+  html += '<div class="help-section"><div class="help-section-title"><span class="help-section-icon">&#9881;</span> Configuraci\u00f3n</div>';
+  html += '<table class="help-shortcut-table"><tbody>';
+  var configItems = [
+    ['D\u00edas m\u00e1ximos por etapa', 'En la pesta\u00f1a Config puedes ajustar cu\u00e1ntos d\u00edas puede estar una ficha en cada etapa antes de que se marque como retraso. Cada pipeline y cada etapa tiene su propio valor configurable.'],
+    ['Gesti\u00f3n del equipo', 'Bot\u00f3n \ud83d\udc65 Equipo en el header: a\u00f1ade, edita o elimina comerciales. Los cambios se reflejan inmediatamente en todos los selectores de las fichas.'],
+    ['Probabilidad personalizada', 'En la ficha de cada oportunidad puedes sobrescribir el % de probabilidad est\u00e1ndar de la etapa. El bot\u00f3n \u21a9 Restablecer vuelve al valor est\u00e1ndar. Las probabilidades personalizadas se marcan con *.'],
+    ['Importes editables', 'El importe de cada oportunidad es editable en cualquier momento desde la ficha. El dashboard y los KPIs se recalculan en tiempo real al cambiarlo.'],
+  ];
+  configItems.forEach(function(r){
+    html += '<tr><td>'+r[0]+'</td><td style="color:var(--fmu)">'+r[1]+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // EXPORTAR PDF
+  html += '<div class="help-section"><div class="help-section-title"><span class="help-section-icon">&#128196;</span> Exportar a PDF</div>';
+  html += '<div class="help-step-text" style="font-size:12px;color:var(--fmu);line-height:1.6;">El bot\u00f3n <strong>\u2193 Exportar PDF</strong> en el header genera un informe ejecutivo completo con: KPIs globales, tabla detallada de todas las oportunidades activas con etapa, comercial, importe y probabilidad, rendimiento por comercial con importes ponderados, y tabla de oportunidades perdidas con motivos. El informe se abre en una nueva pesta\u00f1a y lanza autom\u00e1ticamente el di\u00e1logo de impresi\u00f3n del navegador.</div>';
+  html += '<div class="help-tip" style="margin-top:10px"><span class="help-tip-icon">&#128161;</span><span>Para la versi\u00f3n definitiva conectada a <strong>Supabase</strong>, los datos se sincronizar\u00e1n en tiempo real entre todos los usuarios del equipo. Los d\u00edas en etapa se calcular\u00e1n autom\u00e1ticamente desde la fecha real de entrada. Consulta con el equipo t\u00e9cnico para la configuraci\u00f3n de la base de datos.</span></div>';
+  html += '</div>';
+
+  html += '</div>'; // close help-wrap
+  document.getElementById("main-content").innerHTML = html;
+}
+window.renderHelp = renderHelp;
+
+// Expose all functions to global scope for onclick handlers
+window.setView = setView;
+window.setPipeline = setPipeline;
+window.openLead = openLead;
+window.closeModal = closeModal;
+window.overlayClickHandler = overlayClickHandler;
+window.setComercial = setComercial;
+window.setImporte = setImporte;
+window.setProb = setProb;
+window.resetProb = resetProb;
+window.setConcepto = setConcepto;
+window.setMatriculas = setMatriculas;
+window.nlConceptoChange = nlConceptoChange;
+window.addObs = addObs;
+window.advanceStage = advanceStage;
+window.recoverLead = recoverLead;
+window.openLostModalFromLead = openLostModalFromLead;
+window.openLostModal = openLostModal;
+window.confirmLost = confirmLost;
+window.openNewLead = openNewLead;
+window.confirmNewLead = confirmNewLead;
+window.openEquipo = openEquipo;
+window.editEq = editEq;
+window.saveEq = saveEq;
+window.removeEq = removeEq;
+window.addEq = addEq;
+window.exportPDF = exportPDF;
+window.openExportModal = openExportModal;
+window.runExportPDF = runExportPDF;
+window.dragStart = dragStart;
+window.colOver = colOver;
+window.colLeave = colLeave;
+window.colDrop = colDrop;
+window.checkAndTriggerAutomations = checkAndTriggerAutomations;
+window.checkOverdueNotifications = checkOverdueNotifications;
+window.renderNotifications = renderNotifications;
+window.renderHelp = renderHelp;
+window.markAllRead = markAllRead;
+window.clearNotif = clearNotif;
+window.clearAllNotifs = clearAllNotifs;
+window.updateNotifBadge = updateNotifBadge;
+
+// INIT
+refresh();
+setTimeout(function(){ checkOverdueNotifications(); updateNotifBadge(); }, 300);
+
+
+</script>
+</body>
+</html>
