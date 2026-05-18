@@ -272,6 +272,116 @@ html,body{height:100%;font-family:"Calibri","Segoe UI","Helvetica Neue",Arial,sa
 </div>
 <script>
 
+// ============================================================
+// SUPABASE CONFIG
+// ============================================================
+var SB_URL = "https://bcgwazomfobdxrlxheyy.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjZ3dhem9tZm9iZHhybHhoZXl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4Mjc0MjIsImV4cCI6MjA5NDQwMzQyMn0.cphrHWw0EaTzDyu6DnvSzS9OU3ElxbndGN3uj2OzWzc";
+
+function sbHeaders(extra){
+  var h={"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY};
+  if(extra)Object.assign(h,extra);
+  return h;
+}
+
+// Generic fetch helpers
+function sbGet(table, params){
+  var url=SB_URL+"/rest/v1/"+table+(params?"?"+params:"");
+  return fetch(url,{headers:sbHeaders({"Prefer":"return=representation"})}).then(function(r){return r.json();});
+}
+function sbPost(table, body){
+  return fetch(SB_URL+"/rest/v1/"+table,{method:"POST",headers:sbHeaders({"Prefer":"return=representation"}),body:JSON.stringify(body)}).then(function(r){return r.json();});
+}
+function sbPatch(table, id, body){
+  return fetch(SB_URL+"/rest/v1/"+table+"?id=eq."+id,{method:"PATCH",headers:sbHeaders({"Prefer":"return=representation"}),body:JSON.stringify(body)}).then(function(r){return r.json();});
+}
+function sbDelete(table, id){
+  return fetch(SB_URL+"/rest/v1/"+table+"?id=eq."+id,{method:"DELETE",headers:sbHeaders()}).then(function(r){return r.ok;});
+}
+function sbPatchConfig(key, value){
+  return fetch(SB_URL+"/rest/v1/config?key=eq."+encodeURIComponent(key),{method:"PATCH",headers:sbHeaders({"Prefer":"return=representation"}),body:JSON.stringify({value:value})}).then(function(r){return r.json();});
+}
+
+// Convert DB row -> local lead object
+function dbToLead(row){
+  return {
+    id: row.id,
+    pipeline: row.pipeline,
+    company: row.company,
+    sector: row.sector||"",
+    stage: row.stage,
+    days: row.days,
+    comercial: row.comercial||"",
+    importe: row.importe!=null?Number(row.importe):null,
+    probCustom: row.prob_custom!=null?Number(row.prob_custom):null,
+    concepto: row.concepto||null,
+    matriculas: row.matriculas!=null?Number(row.matriculas):null,
+    contact: row.contact||"",
+    lost: row.lost||false,
+    lostReason: row.lost_reason||"",
+    obs: row.obs||[]
+  };
+}
+// Convert local lead -> DB row
+function leadToDb(l){
+  return {
+    pipeline: l.pipeline,
+    company: l.company,
+    sector: l.sector||"",
+    stage: l.stage,
+    days: l.days,
+    comercial: l.comercial||"",
+    importe: l.importe!=null?l.importe:null,
+    prob_custom: l.probCustom!=null?l.probCustom:null,
+    concepto: l.concepto||null,
+    matriculas: l.matriculas!=null?l.matriculas:null,
+    contact: l.contact||"",
+    lost: l.lost||false,
+    lost_reason: l.lostReason||"",
+    obs: l.obs||[]
+  };
+}
+
+// ============================================================
+// INIT: load all data from Supabase then start app
+// ============================================================
+function initApp(){
+  // Show loading state
+  document.getElementById("main-content").innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:200px;gap:12px;color:#fff"><span style="font-size:22px">⏳</span><span style="font-size:14px;color:var(--fl)">Conectando con Supabase...</span></div>';
+
+  Promise.all([
+    sbGet("leads","order=id.asc"),
+    sbGet("comerciales","order=id.asc"),
+    sbGet("config","select=key,value")
+  ]).then(function(results){
+    var dbLeads=results[0], dbComs=results[1], dbConfig=results[2];
+
+    // Load leads
+    leads = Array.isArray(dbLeads) ? dbLeads.map(dbToLead) : [];
+    if(leads.length>0) nextId = Math.max.apply(null, leads.map(function(l){return l.id;}))+1;
+
+    // Load comerciales
+    if(Array.isArray(dbComs)&&dbComs.length>0)
+      comerciales = dbComs.map(function(r){return r.nombre;});
+
+    // Load config
+    if(Array.isArray(dbConfig)){
+      dbConfig.forEach(function(row){
+        var v=row.value;
+        if(row.key==="stageConfig") stageConfig=v;
+        if(row.key==="conceptosIngreso") conceptosIngreso=v;
+        if(row.key==="conceptosConMatriculas") conceptosConMatriculas=v;
+        if(row.key==="conceptosAreaEmpresas") conceptosAreaEmpresas=v;
+      });
+    }
+
+    refresh();
+    setTimeout(function(){ checkOverdueNotifications(); updateNotifBadge(); }, 300);
+  }).catch(function(err){
+    document.getElementById("main-content").innerHTML='<div style="padding:24px;color:var(--fr)">⚠️ Error conectando con Supabase: '+err.message+'</div>';
+  });
+}
+
 document.getElementById("fin-logo").src = "data:image/png;base64,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m83NzW+0tLSsamtre2bVqlXX0a7na4nn9ddfv4Yen1taWlqgjq++vv576v1/+ctfXoiI2NPT8xANnWM8Ht8hSdKvE4nEMz6f711FUdDtdr+vjgcRSVNT0y3q/QwGw3eoYNIvWbIkUxCEykgkwjudzl/u3r37TovFslgUxajX690HANDY2HgPXcurAQDMZvNLVHivNxqN93Z1dd3t9Xr/jojocrn+CgBQXV19NyKiJEn46aefXqUyVllZ2W2IiPv37599jChcLtdWlcAGs+lBP04uCoIQPXTo0I1aB2mo5gb1fc6rqKiYc+DAge/s3bv30oFsds21ejopH6mEPwgIfAIRkWGYqkWLFo3S2rP9OM1k5cqV55aUlEx59tlnc/szS4fwnHoAAJ7n39eMQzkF5DFGIhGuoqJiOhUguqEyiCiK7/l8vs7+znn77bevpdpsrpZBVq1aNZMe//aOHTsKI5EIJ4pisyAI9iVLluQgInniiScuDIVCktVqXQhwFJ3AMMwi7f3b29vvR0RsbGy8XT0WCAS2OByOw263u8Xv93+oHrfZbI8hIv7zn/+8XHsPg8FwGyLKlZWVl9bU1MxBRIll2Uu2b98+gTLCstTncjqdxYiIFRUV57e2tt7MsmzS5/P5eZ6vVNd069at8wRBkCorK4/6fd3d3T/TEs0wIkEYDocdpaWl51L/QDcYiapK6JaWlts9Hs8/RVHkVCaNxWIxURSPWK3WP3744YfHohDae2ukcmZfX9+aFEKStRs20HHKVLrUFRcXn691erWMUVdXd73Van2TYZg2URS5YDCYEATB6ff7P+3o6HggNVoyWNPGarWWDHe+VSZhGOZIUVFR1ikyyAa/32/R+gPqXFIGQUS8OUWDXEWP31haWlogSVLCarUuEEWRt9lsbwIAvPjii5PC4TBardYHqKZCnuefoppilDoPwWCQYxjm7wAAmzdvHheJROTOzs77XC7XU/F4PLpx48ZcAACO46oCgUA9HV8WtTT09Bkustvto2tqam5DROzq6ip0OByPxeNx5dlnn81FRL3BYMg0GAyZiKgvLi4eI0lS0m63L66rq7s+FAopmzZt+hEN0jwOALBt27bbRVHEioqK64A6uT2UaIZbW5FERLTZbKWDMbVU5pg/f36G1Wpdm6K5vhS6FUUxYLVan001r1KleWdn569EUWRPwMzY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";
 
 // ============================================================
@@ -460,20 +570,8 @@ function isOverdue(lead) {
   return lead.days > getMaxDays(lead.pipeline, lead.stage);
 }
 
-var leads = [
-  {id:1,pipeline:"P1",company:"Talleres Iraizoz S.L.",sector:"Metalurgia",stage:0,days:3,comercial:"R. Izquierdo",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Jon Iraizoz - Director General",lost:false,lostReason:"",obs:[{author:"Sistema",date:"14/05/2026",type:"system",text:"Lead creado desde campaña LinkedIn Navarra Industrial."},{author:"R. Izquierdo",date:"15/05/2026",type:"user",text:"Empresa con buen perfil. Cumple los 4 criterios."}]},
-  {id:2,pipeline:"P1",company:"Ekinsa Automatización",sector:"Automatización",stage:1,days:7,comercial:"R. Izquierdo",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Marta Lecumberri - Gerente",lost:false,lostReason:"",obs:[{author:"Sistema",date:"07/05/2026",type:"system",text:"Cualificada automáticamente."},{author:"R. Izquierdo",date:"12/05/2026",type:"user",text:"Llamada realizada. Muy receptiva. Reunión semana del 20."}]},
-  {id:3,pipeline:"P1",company:"Forjas del Arga S.A.",sector:"Forja",stage:2,days:16,comercial:"M. García",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Ignacio Galar - Dir. Operaciones",lost:false,lostReason:"",obs:[{author:"Sistema",date:"01/05/2026",type:"system",text:"Alerta: 16 días sin avance en etapa."},{author:"M. García",date:"10/05/2026",type:"alert",text:"Sin respuesta al email del 05/05. Posible conflicto interno."}]},
-  {id:4,pipeline:"P1",company:"Piezas Técnicas Navarra",sector:"Componentes",stage:3,days:5,comercial:"R. Izquierdo",importe:4800,probCustom:70,concepto:"Captación",matriculas:null,contact:"Ana Vidondo - CEO",lost:false,lostReason:"",obs:[{author:"R. Izquierdo",date:"10/05/2026",type:"user",text:"Ana ha pedido ficha de inscripción. Interesada en Mesa de RRHH."}]},
-  {id:5,pipeline:"P1",company:"Fundiciones Pamplona",sector:"Fundición",stage:4,days:2,comercial:"E. Fernández",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Pedro Asiáin - Gerente",lost:false,lostReason:"",obs:[{author:"E. Fernández",date:"13/05/2026",type:"user",text:"Documentación recibida completa."}]},
-  {id:6,pipeline:"P2",company:"Intasa Grupo Industrial",sector:"Holding",stage:1,days:4,comercial:"R. Izquierdo",importe:null,probCustom:null,concepto:null,matriculas:null,contact:"Elena Azcárate - Directora General",lost:false,lostReason:"",obs:[{author:"Sistema",date:"11/05/2026",type:"system",text:"P2 abierto automáticamente al cerrar P1."},{author:"R. Izquierdo",date:"12/05/2026",type:"user",text:"Onboarding agendado para el 19/05."}]},
-  {id:7,pipeline:"P3",company:"Cementos Portland Navarra",sector:"Construcción",stage:2,days:6,comercial:"M. García",importe:2400,probCustom:null,concepto:"First Level",matriculas:12,contact:"Laura Sanz - RRHH",lost:false,lostReason:"",obs:[{author:"M. García",date:"11/05/2026",type:"user",text:"Propuesta enviada para curso Lean Manufacturing (12 alumnos)."}]},
-  {id:8,pipeline:"P3",company:"Viscofan S.A.",sector:"Alimentación",stage:4,days:2,comercial:"E. Fernández",importe:6800,probCustom:null,concepto:"Next Level",matriculas:8,contact:"Mikel Etxeberria - Dir. Operaciones",lost:false,lostReason:"",obs:[{author:"E. Fernández",date:"14/05/2026",type:"user",text:"Comprometidos verbalmente programa directivo Q3."}]},
-  {id:9,pipeline:"P4",company:"Grupo Cívica",sector:"Servicios",stage:1,days:8,comercial:"R. Izquierdo",importe:3200,probCustom:null,concepto:"Directivo FIINCA",matriculas:null,contact:"Carlos Mendiola - CEO",lost:false,lostReason:"",obs:[{author:"Sistema",date:"08/05/2026",type:"system",text:"P4 sugerido desde P2 paso 3."},{author:"R. Izquierdo",date:"10/05/2026",type:"user",text:"Reunión FIINCA realizada. Carlos muy receptivo."}]},
-  {id:10,pipeline:"P1",company:"Metálicas Ilundáin",sector:"Metalurgia",stage:-1,days:22,comercial:"M. García",importe:4800,probCustom:null,concepto:"Captación",matriculas:null,contact:"Javier Ilundáin - Gerente",lost:true,lostReason:"Precio fuera de presupuesto",obs:[{author:"M. García",date:"02/05/2026",type:"alert",text:"La cuota anual es demasiado elevada para el momento actual."}]}
-];
-
-var comerciales = ["R. Izquierdo","M. García","E. Fernández","A. López"];
+var leads = [];
+var comerciales = [];
 var activePipeline = "P1";
 var currentView = "kanban";
 var dragId = null;
@@ -578,7 +676,12 @@ function colDrop(sid){
   colLeave(sid);
   if(dragId==null)return;
   if(sid==="lost"){ var tmp=dragId; dragId=null; openLostModal(tmp); }
-  else{ var l=getLead(dragId); if(l){l.stage=Number(sid);l.days=0; var _l=l;} dragId=null; refresh(); setTimeout(function(){checkAndTriggerAutomations(_l);},100); }
+  else{
+    var l=getLead(dragId);
+    if(l){ l.stage=Number(sid); l.days=0; var _l=l; sbPatch("leads",l.id,{stage:l.stage,days:0}); }
+    dragId=null; refresh();
+    setTimeout(function(){checkAndTriggerAutomations(_l);},100);
+  }
 }
 function dragStart(id){
   dragId=id;
@@ -882,9 +985,9 @@ function refreshPonderado(id){
   var p=getProb(l);
   el.textContent=(l.importe&&p!=null)?fmt(l.importe*p/100):"—";
 }
-function liveSetComercial(id,val){ var l=getLead(id);if(l)l.comercial=val; renderKPIs(); if(currentView==="kanban")renderKanban(); }
-function liveSetImporte(id,val){ var l=getLead(id);if(!l)return; l.importe=val?Number(val):null; refreshPonderado(id); renderKPIs(); if(currentView==="kanban")renderKanban(); }
-function liveSetProb(id,val){ var l=getLead(id);if(!l)return; l.probCustom=val!==""?Number(val):null; refreshPonderado(id); renderKPIs(); if(currentView==="kanban")renderKanban(); }
+function liveSetComercial(id,val){ var l=getLead(id);if(!l)return; l.comercial=val; renderKPIs(); if(currentView==="kanban")renderKanban(); sbPatch("leads",id,{comercial:val}); }
+function liveSetImporte(id,val){ var l=getLead(id);if(!l)return; l.importe=val?Number(val):null; refreshPonderado(id); renderKPIs(); if(currentView==="kanban")renderKanban(); sbPatch("leads",id,{importe:l.importe}); }
+function liveSetProb(id,val){ var l=getLead(id);if(!l)return; l.probCustom=val!==""?Number(val):null; refreshPonderado(id); renderKPIs(); if(currentView==="kanban")renderKanban(); sbPatch("leads",id,{prob_custom:l.probCustom}); }
 function liveSetConcepto(id,val){
   var l=getLead(id); if(!l)return;
   l.concepto=val||null;
@@ -892,8 +995,9 @@ function liveSetConcepto(id,val){
   var wrap=document.getElementById("mat-wrap-"+id);
   if(wrap) wrap.style.display=(val&&conceptosConMatriculas.indexOf(val)!==-1)?"block":"none";
   renderKPIs(); if(currentView==="kanban")renderKanban();
+  sbPatch("leads",id,{concepto:l.concepto, matriculas:l.matriculas});
 }
-function liveSetMatriculas(id,val){ var l=getLead(id);if(!l)return; l.matriculas=val?Number(val):null; renderKPIs(); if(currentView==="kanban")renderKanban(); }
+function liveSetMatriculas(id,val){ var l=getLead(id);if(!l)return; l.matriculas=val?Number(val):null; renderKPIs(); if(currentView==="kanban")renderKanban(); sbPatch("leads",id,{matriculas:l.matriculas}); }
 window.liveSetComercial=liveSetComercial;
 window.liveSetImporte=liveSetImporte;
 window.liveSetProb=liveSetProb;
@@ -908,6 +1012,7 @@ function resetProb(id){
   l.probCustom=null;
   if(selectedLeadId===id) renderLeadModal(id);
   renderKPIs();
+  sbPatch("leads",id,{prob_custom:null});
 }
 function setConcepto(id,val){
   var l=getLead(id); if(!l)return;
@@ -935,15 +1040,17 @@ function deleteLead(id){
   leads=leads.filter(function(l){return l.id!==id;});
   closeModal();
   refresh();
+  sbDelete("leads", id);
 }
 window.confirmDeleteLead=confirmDeleteLead;
 window.deleteLead=deleteLead;
 function addObs(id){
+  var inp=document.getElementById("obs-input-"+id);
   var txt=inp?inp.value.trim():"";
   if(!txt)return;
   var l=getLead(id);
   if(l){l.obs.push({author:"R. Izquierdo",date:nowStr(),type:"user",text:txt});}
-  inp.value="";
+  if(inp)inp.value="";
   var list=document.getElementById("obs-list-"+id);
   if(list){
     var div=document.createElement("div");
@@ -952,12 +1059,14 @@ function addObs(id){
     list.appendChild(div);
     list.scrollTop=list.scrollHeight;
   }
+  if(l) sbPatch("leads",id,{obs:l.obs});
 }
 function advanceStage(id){
   var l=getLead(id);if(!l)return;
   var max=PIPELINES[l.pipeline].stages.length-1;
   if(l.stage<max){l.stage++;l.days=0;}
   closeModal();refresh();
+  sbPatch("leads",id,{stage:l.stage,days:0,obs:l.obs});
   setTimeout(function(){checkAndTriggerAutomations(l);},100);
 }
 function recoverLead(id){
@@ -965,6 +1074,7 @@ function recoverLead(id){
   l.lost=false;l.stage=0;l.lostReason="";
   l.obs.push({author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad recuperada y devuelta a primera etapa."});
   refresh();
+  sbPatch("leads",id,{lost:false,stage:0,days:0,lost_reason:"",obs:l.obs});
   setTimeout(function(){ checkAndTriggerAutomations(l); },150);
 }
 
@@ -988,6 +1098,7 @@ function confirmLost(id){
   l.lost=true;l.stage=-1;l.lostReason=reason;
   l.obs.push({author:"Sistema",date:nowStr(),type:"alert",text:"Marcada como perdida. Motivo: "+(reason||"Sin especificar")});
   closeModal();refresh();
+  sbPatch("leads",id,{lost:true,stage:-1,lost_reason:reason,obs:l.obs});
 }
 
 // ============================================================
@@ -1031,10 +1142,23 @@ function confirmNewLead(stageId){
     var mval=(document.getElementById("nl-matriculas")||{}).value||"";
     matriculas=mval?Number(mval):null;
   }
-  var newLead = {id:nextId++,pipeline:activePipeline,company:company,sector:sector,stage:stageId,days:0,comercial:comercial,importe:importe?Number(importe):null,probCustom:null,concepto:concepto,matriculas:matriculas,contact:contact,lost:false,lostReason:"",obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad creada manualmente."}]};
-  leads.push(newLead);
-  closeModal();refresh();
-  setTimeout(function(){ checkAndTriggerAutomations(newLead); checkOverdueNotifications(); }, 150);
+  var newLead = {
+    pipeline:activePipeline, company:company, sector:sector, stage:stageId,
+    days:0, comercial:comercial, importe:importe?Number(importe):null,
+    probCustom:null, concepto:concepto, matriculas:matriculas, contact:contact,
+    lost:false, lostReason:"",
+    obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad creada manualmente."}]
+  };
+  closeModal();
+  sbPost("leads", leadToDb(newLead)).then(function(rows){
+    var saved=Array.isArray(rows)?rows[0]:rows;
+    if(saved&&saved.id){
+      newLead.id=saved.id;
+      leads.push(newLead);
+      refresh();
+      setTimeout(function(){ checkAndTriggerAutomations(newLead); checkOverdueNotifications(); }, 150);
+    }
+  });
 }
 
 // ============================================================
@@ -1065,13 +1189,31 @@ function editEq(i){
 }
 function saveEq(i){
   var inp=document.getElementById("eq-inp-"+i);
-  if(inp&&inp.value.trim())comerciales[i]=inp.value.trim();
+  if(inp&&inp.value.trim()){
+    var oldNombre=comerciales[i];
+    var newNombre=inp.value.trim();
+    comerciales[i]=newNombre;
+    // PATCH by nombre
+    fetch(SB_URL+"/rest/v1/comerciales?nombre=eq."+encodeURIComponent(oldNombre),{
+      method:"PATCH",headers:sbHeaders({"Prefer":"return=representation"}),
+      body:JSON.stringify({nombre:newNombre})
+    });
+  }
   renderEquipoModal();
 }
-function removeEq(i){ comerciales.splice(i,1); renderEquipoModal(); }
+function removeEq(i){
+  var nombre=comerciales[i];
+  comerciales.splice(i,1);
+  fetch(SB_URL+"/rest/v1/comerciales?nombre=eq."+encodeURIComponent(nombre),{method:"DELETE",headers:sbHeaders()});
+  renderEquipoModal();
+}
 function addEq(){
   var inp=document.getElementById("eq-new");
-  if(inp&&inp.value.trim()){comerciales.push(inp.value.trim());}
+  if(inp&&inp.value.trim()){
+    var nombre=inp.value.trim();
+    comerciales.push(nombre);
+    sbPost("comerciales",{nombre:nombre});
+  }
   renderEquipoModal();
 }
 
@@ -1360,11 +1502,15 @@ function checkAndTriggerAutomations(lead) {
   if(lead.pipeline === "P1" && lead.stage === pipeline.stages.length - 1) {
     var alreadyInP2 = leads.find(function(l){ return l.pipeline==="P2" && l.company===lead.company && !l.lost; });
     if(!alreadyInP2) {
-      leads.push({
-        id: nextId++, pipeline:"P2", company:lead.company, sector:lead.sector,
+      var newP2 = {
+        pipeline:"P2", company:lead.company, sector:lead.sector,
         stage:0, days:0, comercial:lead.comercial, importe:null, probCustom:null,
-        contact:lead.contact, lost:false, lostReason:"",
+        concepto:null, matriculas:null, contact:lead.contact, lost:false, lostReason:"",
         obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Ficha creada automáticamente al cerrar P1 como Asociada. Inicio del proceso de onboarding."}]
+      };
+      sbPost("leads", leadToDb(newP2)).then(function(rows){
+        var saved=Array.isArray(rows)?rows[0]:rows;
+        if(saved&&saved.id){ newP2.id=saved.id; leads.push(newP2); refresh(); }
       });
       showAutomationAlert("P1 → P2", lead.company + " ha sido añadida automáticamente al pipeline de Onboarding (P2) en la primera etapa.");
     }
@@ -1378,13 +1524,16 @@ function checkAndTriggerAutomations(lead) {
         "P2 → P4",
         lead.company + " ha activado Mesas (P2 paso 3). ¿Deseas abrir una oportunidad de Captación FIINCA (P4) para esta empresa?",
         function() {
-          leads.push({
-            id: nextId++, pipeline:"P4", company:lead.company, sector:lead.sector,
+          var newP4={
+            pipeline:"P4", company:lead.company, sector:lead.sector,
             stage:0, days:0, comercial:lead.comercial, importe:3200, probCustom:null,
-            contact:lead.contact, lost:false, lostReason:"",
+            concepto:"Directivo FIINCA", matriculas:null, contact:lead.contact, lost:false, lostReason:"",
             obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad P4 abierta automáticamente desde P2 paso 3 (Mesas activadas)."}]
+          };
+          sbPost("leads", leadToDb(newP4)).then(function(rows){
+            var saved=Array.isArray(rows)?rows[0]:rows;
+            if(saved&&saved.id){ newP4.id=saved.id; leads.push(newP4); refresh(); }
           });
-          refresh();
         }
       );
     }
@@ -1399,13 +1548,16 @@ function checkAndTriggerAutomations(lead) {
         "P3 → P1",
         lead.company + " está en Venta Formación (P3) pero no está en el pipeline de Captación Asociada. ¿Deseas abrir una oportunidad en P1?",
         function() {
-          leads.push({
-            id: nextId++, pipeline:"P1", company:lead.company, sector:lead.sector,
+          var newP1={
+            pipeline:"P1", company:lead.company, sector:lead.sector,
             stage:0, days:0, comercial:lead.comercial, importe:4800, probCustom:null,
-            contact:lead.contact, lost:false, lostReason:"",
+            concepto:"Captación", matriculas:null, contact:lead.contact, lost:false, lostReason:"",
             obs:[{author:"Sistema",date:nowStr(),type:"system",text:"Oportunidad P1 sugerida automáticamente desde P3. Empresa activa en formación sin ser asociada."}]
+          };
+          sbPost("leads", leadToDb(newP1)).then(function(rows){
+            var saved=Array.isArray(rows)?rows[0]:rows;
+            if(saved&&saved.id){ newP1.id=saved.id; leads.push(newP1); refresh(); }
           });
-          refresh();
         }
       );
     }
@@ -1565,6 +1717,12 @@ window.addStage=addStage;
 function setStageProbability(pid, stageId, val){
   if(PIPELINES[pid]&&PIPELINES[pid].stages[stageId]!=null)
     PIPELINES[pid].stages[stageId].prob=Math.min(100,Math.max(0,Number(val)||0));
+  // Persist pipeline stage probs as config
+  var pipelineProbs={};
+  Object.keys(PIPELINES).forEach(function(k){
+    pipelineProbs[k]=PIPELINES[k].stages.map(function(s){return s.prob;});
+  });
+  sbPatchConfig("pipelineProbs", pipelineProbs);
   renderKPIs();
 }
 window.setStageProbability=setStageProbability;
@@ -1575,23 +1733,26 @@ function renameConcepto(idx,val){
   var newVal=val.trim();
   if(!newVal)return;
   conceptosIngreso[idx]=newVal;
-  // Update leads
   leads.forEach(function(l){if(l.concepto===old)l.concepto=newVal;});
-  // Update conceptosConMatriculas
   var mi=conceptosConMatriculas.indexOf(old);
   if(mi!==-1) conceptosConMatriculas[mi]=newVal;
+  sbPatchConfig("conceptosIngreso", conceptosIngreso);
+  sbPatchConfig("conceptosConMatriculas", conceptosConMatriculas);
 }
 function toggleConceptoMat(idx,checked){
   var c=conceptosIngreso[idx];
   var mi=conceptosConMatriculas.indexOf(c);
   if(checked&&mi===-1) conceptosConMatriculas.push(c);
   if(!checked&&mi!==-1) conceptosConMatriculas.splice(mi,1);
+  sbPatchConfig("conceptosConMatriculas", conceptosConMatriculas);
 }
 function removeConcepto(idx){
   var c=conceptosIngreso[idx];
   conceptosIngreso.splice(idx,1);
   var mi=conceptosConMatriculas.indexOf(c);
   if(mi!==-1) conceptosConMatriculas.splice(mi,1);
+  sbPatchConfig("conceptosIngreso", conceptosIngreso);
+  sbPatchConfig("conceptosConMatriculas", conceptosConMatriculas);
   renderConfig();
 }
 function addConcepto(){
@@ -1603,6 +1764,8 @@ function addConcepto(){
     conceptosIngreso.push(newC);
     if(chk&&chk.checked) conceptosConMatriculas.push(newC);
   }
+  sbPatchConfig("conceptosIngreso", conceptosIngreso);
+  sbPatchConfig("conceptosConMatriculas", conceptosConMatriculas);
   renderConfig();
 }
 window.renameConcepto=renameConcepto;
@@ -1613,7 +1776,7 @@ window.addConcepto=addConcepto;
 function setMaxDays(pipelineId, stageId, val) {
   if(!stageConfig[pipelineId]) stageConfig[pipelineId] = [];
   stageConfig[pipelineId][stageId] = Number(val) || 14;
-  // Re-render kanban if currently viewing it to update colors
+  sbPatchConfig("stageConfig", stageConfig);
 }
 window.setMaxDays = setMaxDays;
 window.renderConfig = renderConfig;
@@ -1817,8 +1980,7 @@ window.clearAllNotifs = clearAllNotifs;
 window.updateNotifBadge = updateNotifBadge;
 
 // INIT
-refresh();
-setTimeout(function(){ checkOverdueNotifications(); updateNotifBadge(); }, 300);
+initApp();
 
 
 </script>
